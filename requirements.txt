@@ -1,9 +1,12 @@
+# Arquivo: requirements.txt
+
 flask
 flask_cors
-Pillow
+gunicorn
+werkzeug
 google-generativeai
+tavily-python
+Pillow
 PyMuPDF
 python-docx
 python-pptx
-tavily-python  # <-- VERIFIQUE SE ESTA LINHA EXISTE
-gunicorn       # <-- ADICIONE ESTA LINHA (RECOMENDADO PARA PRODUÇÃO)
