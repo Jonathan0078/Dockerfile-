@@ -1,63 +1,60 @@
-# Importa as bibliotecas necessárias
+# Arquivo: main.py
+
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
-import pytesseract
-import fitz  # PyMuPDF
-import docx
 import io
+import google.generativeai as genai
+
+# --- CONFIGURAÇÃO INICIAL ---
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
-
-# Habilita o CORS para permitir que seu site no github.io acesse esta API
+# Habilita o CORS
 CORS(app)
 
-# --- FUNÇÕES DE PROCESSAMENTO DE ARQUIVOS ---
+# --- CONFIGURAÇÃO DA API DO GEMINI ---
+# Pega a chave da API a partir das variáveis de ambiente do Render.
+# É mais seguro do que colocar a chave diretamente no código.
+try:
+    gemini_api_key = os.environ.get('GEMINI_API_KEY')
+    if not gemini_api_key:
+        raise ValueError("A chave da API do Gemini não foi encontrada nas variáveis de ambiente.")
+    genai.configure(api_key=gemini_api_key)
+except Exception as e:
+    print(f"ERRO DE CONFIGURAÇÃO: {e}")
 
-def processar_imagem_e_extrair_texto(arquivo_imagem_stream):
+
+# --- FUNÇÃO PRINCIPAL DE ANÁLISE DE IMAGEM ---
+def analisar_imagem_com_gemini(arquivo_stream):
+    """
+    Envia uma imagem para a API do Gemini e pede uma descrição.
+    """
     try:
-        imagem = Image.open(arquivo_imagem_stream)
-        texto_extraido = pytesseract.image_to_string(imagem, lang='por')
-        return texto_extraido if texto_extraido.strip() else "Não foi possível encontrar texto na imagem."
+        # Carrega a imagem usando a biblioteca Pillow
+        img = Image.open(arquivo_stream)
+
+        # Seleciona o modelo do Gemini. 'gemini-1.5-flash' é rápido e ótimo para isso.
+        model = genai.GenerativeModel('gemini-1.5-flash')
+
+        # Cria o "prompt": uma instrução e a imagem.
+        # Estamos enviando uma lista com o texto e o objeto da imagem.
+        prompt_text = "Descreva esta imagem em detalhes. Se for um componente industrial como um rolamento, motor ou peça, explique o que é, sua função principal e possíveis causas de falha. Se não for um componente, apenas descreva o que você vê."
+        
+        # Gera o conteúdo
+        response = model.generate_content([prompt_text, img])
+
+        # Retorna o texto da resposta do Gemini
+        return response.text
+
     except Exception as e:
-        return f"Erro ao processar imagem: {e}"
+        print(f"ERRO AO CHAMAR A API DO GEMINI: {e}")
+        # Retorna uma mensagem de erro clara para o frontend
+        return f"Ocorreu um erro ao tentar analisar a imagem com o Gemini: {str(e)}"
 
-def extrair_texto_de_pdf(arquivo_pdf):
-    try:
-        texto_completo = ""
-        # Abre o PDF a partir do stream de bytes do arquivo
-        with fitz.open(stream=arquivo_pdf.read(), filetype="pdf") as doc:
-            for pagina in doc:
-                texto_completo += pagina.get_text()
-        return texto_completo if texto_completo.strip() else "Documento PDF vazio ou sem texto selecionável."
-    except Exception as e:
-        return f"Erro ao processar PDF: {e}"
-
-def extrair_texto_de_docx(arquivo_docx):
-    try:
-        documento = docx.Document(io.BytesIO(arquivo_docx.read()))
-        texto_completo = "\n".join([p.text for p in documento.paragraphs])
-        return texto_completo if texto_completo.strip() else "Documento DOCX vazio."
-    except Exception as e:
-        return f"Erro ao processar DOCX: {e}"
-
-def ler_arquivo_txt(arquivo_txt_stream):
-    try:
-        # Envolve o stream de bytes em um leitor de texto
-        wrapper = io.TextIOWrapper(arquivo_txt_stream, encoding='utf-8')
-        return wrapper.read()
-    except Exception as e:
-        return f"Erro ao ler arquivo TXT: {e}"
-
-# --- ROTAS DA API ---
-
-# Rota principal para verificar se o servidor está no ar
-@app.route('/')
-def index():
-    return "API de Reconhecimento de Arquivos está no ar!"
-
-# Rota de reconhecimento que o seu JavaScript vai chamar
+# --- ROTA DA API ---
+# Esta rota agora usa o Gemini para tudo que for imagem.
 @app.route('/reconhecer', methods=['POST'])
 def upload_e_reconhecer():
     if 'file' not in request.files:
@@ -68,23 +65,21 @@ def upload_e_reconhecer():
     
     conteudo_reconhecido = ""
 
-    try:
-        if filename.endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp')):
-            conteudo_reconhecido = processar_imagem_e_extrair_texto(file.stream)
-        elif filename.endswith('.pdf'):
-            conteudo_reconhecido = extrair_texto_de_pdf(file)
-        elif filename.endswith('.docx'):
-            conteudo_reconhecido = extrair_texto_de_docx(file)
-        elif filename.endswith('.txt'):
-            conteudo_reconhecido = ler_arquivo_txt(file.stream)
-        else:
-            return jsonify({'erro': f"Tipo de arquivo '{filename.split('.')[-1]}' não suportado."}), 415
-        
-        return jsonify({'conteudo_extraido': conteudo_reconhecido})
+    # Verifica se é uma imagem
+    if filename.endswith(('.png', '.jpg', '.jpeg')):
+        conteudo_reconhecido = analisar_imagem_com_gemini(file.stream)
+    else:
+        # Resposta para outros tipos de arquivo
+        conteudo_reconhecido = f"Este sistema está configurado para analisar imagens, não arquivos do tipo '{filename.split('.')[-1]}'."
+    
+    # Retorna a resposta do Gemini para o seu frontend
+    return jsonify({'conteudo_extraido': conteudo_reconhecido})
 
-    except Exception as e:
-        return jsonify({'erro': f'Ocorreu um erro geral no servidor: {e}'}), 500
+# Rota principal para verificar se o servidor está no ar
+@app.route('/')
+def index():
+    return "API da AEMI com análise de imagem via Gemini está no ar!"
 
-# Esta parte não é necessária no Render com Gunicorn, mas não atrapalha
+# --- INICIALIZAÇÃO DO APP ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
