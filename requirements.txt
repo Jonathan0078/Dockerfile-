@@ -1,0 +1,8 @@
+# Arquivo: requirements.txt
+
+Flask
+gunicorn # Servidor de produção para o Flask
+pytesseract
+Pillow
+PyMuPDF
+python-docx
