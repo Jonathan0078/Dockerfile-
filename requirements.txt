@@ -1,5 +1,3 @@
-# Arquivo: requirements.txt
-
 flask
 flask_cors
 gunicorn
