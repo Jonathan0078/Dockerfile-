@@ -1,4 +1,4 @@
-# Arquivo: main.py
+# Arquivo: main.py (Versão com OpenAI/ChatGPT)
 
 import os
 from flask import Flask, request, jsonify
@@ -7,9 +7,12 @@ from werkzeug.utils import secure_filename
 import json
 
 # --- Importação das Ferramentas e Bibliotecas ---
-import google.generativeai as genai
-from tavily import TavilyClient # Cliente da API de pesquisa na web
-from PIL import Image # Para processar imagens
+# Importação para OpenAI
+from openai import OpenAI
+# Importação para Pesquisa na Web
+from tavily import TavilyClient
+# Importação para processamento de arquivos
+from PIL import Image
 import fitz # PyMuPDF para PDF
 from docx import Document # para .docx
 from pptx import Presentation # para .pptx
@@ -27,72 +30,65 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # --- CONFIGURAÇÃO DAS APIS ---
 # Carrega as chaves das variáveis de ambiente para segurança
 try:
-    gemini_api_key = os.environ.get('GEMINI_API_KEY')
-    genai.configure(api_key=gemini_api_key)
-
+    openai_api_key = os.environ.get('OPENAI_API_KEY')
     tavily_api_key = os.environ.get('TAVILY_API_KEY')
-    
-    # --- NOVO PRINT DE DEPURAÇÃO ---
-    if tavily_api_key:
-        print("LOG DE CONFIGURAÇÃO: TAVILY_API_KEY foi carregada com sucesso!")
-    else:
-        print("LOG DE CONFIGURAÇÃO: TAVILY_API_KEY NÃO foi encontrada na variável de ambiente.")
-    # --- FIM DO PRINT DE DEPURAÇÃO ---
-    
-    tavily_client = TavilyClient(api_key=tavily_api_key)
 
-    if not gemini_api_key or not tavily_api_key:
-        print("AVISO: Uma ou mais chaves de API (GEMINI_API_KEY ou TAVILY_API_KEY) não foram encontradas.")
+    # Inicializa o cliente da OpenAI
+    client = OpenAI(api_key=openai_api_key)
 
+    if not openai_api_key or not tavily_api_key:
+        print("AVISO: Uma ou mais chaves de API (OPENAI ou TAVILY) não foram encontradas nas variáveis de ambiente.")
+        
 except Exception as e:
     print(f"ERRO CRÍTICO DE CONFIGURAÇÃO DE API: {e}")
 
-# --- DEFINIÇÃO DA FERRAMENTA DE PESQUISA WEB ---
+# --- DEFINIÇÃO DA FERRAMENTA DE PESQUISA WEB (A MESMA!) ---
 def search_web(query: str):
     """
     Pesquisa na internet usando a API Tavily para obter informações em tempo real.
-    ...
+    Use esta ferramenta para responder perguntas sobre eventos atuais, notícias,
+    ou quando precisar de informações que não estão no seu conhecimento interno.
     """
-    print(f"Chamando a ferramenta de pesquisa com a query: '{query}'")
-    
-    # --- TRECHO DE CÓDIGO DE TESTE DE CONEXÃO ---
     try:
-        # Tenta uma busca de teste simples para verificar a conectividade
-        test_response = tavily_client.search(query="teste de conexao", search_depth="basic", max_results=1)
-        print("TESTE DE CONEXÃO TAVILY: Conectado com sucesso!")
-    except Exception as e:
-        print(f"TESTE DE CONEXÃO TAVILY: FALHA! Erro: {e}")
-        return f"ERRO INTERNO: Falha na conexão com a API de pesquisa: {e}"
-    # --- FIM DO TRECHO DE TESTE ---
-
-    try:
+        tavily_client = TavilyClient(api_key=tavily_api_key)
+        print(f"Chamando a ferramenta de pesquisa com a query: '{query}'")
         response = tavily_client.search(query=query, search_depth="advanced", max_results=5)
-        return response.get('results', [])
+        return json.dumps(response.get('results', [])) # Retorna como JSON string para o modelo
     except Exception as e:
-        print(f"Erro na ferramenta de pesquisa web (na pesquisa principal): {e}")
+        print(f"Erro na ferramenta de pesquisa web: {e}")
         return f"Ocorreu um erro ao tentar pesquisar: {e}"
 
-# --- INICIALIZAÇÃO DO MODELO GEMINI COM A FERRAMENTA ---
-# Informamos ao modelo sobre a nossa ferramenta de pesquisa
-model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-    tools=[search_web]
-)
-chat_session = model.start_chat()
+# --- DEFINIÇÃO DA FERRAMENTA PARA O MODELO DA OPENAI ---
+# Este é o formato que a OpenAI precisa para "ver" a ferramenta
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web",
+            "description": "Pesquisa na internet usando a API Tavily para obter informações em tempo real. Use para responder sobre eventos atuais ou informações que você não possui.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "O tópico ou pergunta a ser pesquisado na internet.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    }
+]
 
 # --- FUNÇÕES DE PROCESSAMENTO DE ARQUIVOS ---
+# (Manter o código das funções de imagem, PDF, etc., é o mesmo)
 def analisar_imagem_com_gemini(arquivo_stream):
-    """Envia uma imagem para a API do Gemini e pede uma descrição."""
-    try:
-        img = Image.open(arquivo_stream)
-        prompt_text = "Descreva esta imagem em detalhes. Se for um componente industrial como um rolamento, motor ou peça, explique o que é, sua função principal e possíveis causas de falha. Se não for um componente, apenas descreva o que você vê."
-        response = model.generate_content([prompt_text, img])
-        return response.text
-    except Exception as e:
-        return f"Ocorreu um erro ao tentar analisar a imagem: {e}"
+    # Nota: Esta função ainda usa o Gemini. Você precisaria da API de visão da OpenAI para substituí-la.
+    # Por agora, mantenha-a assim ou remova-a se não for usar.
+    return "Função de análise de imagem temporariamente indisponível (usa API do Gemini)."
 
 def extract_text_from_pdf(file_path):
-    """Extrai texto de um arquivo PDF."""
+    # ... mesmo código ...
     try:
         doc = fitz.open(file_path)
         text = "".join(page.get_text() for page in doc)
@@ -102,7 +98,7 @@ def extract_text_from_pdf(file_path):
         return f"Erro ao processar PDF: {e}"
 
 def extract_text_from_docx(file_path):
-    """Extrai texto de um arquivo .docx."""
+    # ... mesmo código ...
     try:
         doc = Document(file_path)
         return "\n".join([para.text for para in doc.paragraphs])
@@ -110,7 +106,7 @@ def extract_text_from_docx(file_path):
         return f"Erro ao processar DOCX: {e}"
 
 def extract_text_from_pptx(file_path):
-    """Extrai texto de um arquivo .pptx."""
+    # ... mesmo código ...
     try:
         prs = Presentation(file_path)
         text = "\n".join(shape.text for slide in prs.slides for shape in slide.shapes if hasattr(shape, "text"))
@@ -123,44 +119,58 @@ def extract_text_from_pptx(file_path):
 @app.route('/chat', methods=['POST'])
 def handle_chat():
     """
-    Rota para conversas de texto, com capacidade de pesquisa na web.
-    Agora trata chamadas de ferramenta do Gemini para pesquisa na web.
+    Rota para conversas de texto, com capacidade de pesquisa na web, usando a API da OpenAI.
     """
+    data = request.get_json()
+    if not data or 'message' not in data:
+        return jsonify({'erro': 'Mensagem não encontrada'}), 400
+    
+    user_message = data['message']
+    
     try:
-        print(f"Requisição POST recebida na rota /chat")
-        
-        data = request.get_json()
-        if not data or 'message' not in data:
-            return jsonify({'erro': 'Mensagem não encontrada'}), 400
-        
-        user_message = data['message']
-        
-        response = chat_session.send_message(user_message)
-        
-        if hasattr(response.candidates[0].content.parts[0], 'function_call'):
-            function_call = response.candidates[0].content.parts[0].function_call
-            
-            print(f"Gemini solicitou a chamada da função: {function_call.name}")
+        # Envia a mensagem para o modelo da OpenAI com as ferramentas
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo", # Ou "gpt-4-turbo" para resultados melhores
+            messages=[{"role": "user", "content": user_message}],
+            tools=tools,
+            tool_choice="auto", # Permite que o modelo decida se usa a ferramenta
+        )
 
-            if function_call.name == 'search_web':
-                query = function_call.args.get('query')
-                
-                search_results = search_web(query)
-                
-                print(f"Resultados da pesquisa recebidos: {str(search_results)[:100]}...")
+        # O primeiro objeto da resposta que vem da API
+        response_message = response.choices[0].message
+        
+        # Verifica se o modelo quer chamar uma ferramenta
+        if response_message.tool_calls:
+            # Obtém a chamada de função
+            tool_call = response_message.tool_calls[0]
+            function_name = tool_call.function.name
+            function_args = json.loads(tool_call.function.arguments)
 
-                tool_response_part = genai.protos.Part(
-                    function_response=genai.protos.FunctionResponse(
-                        name='search_web',
-                        response={'results': search_results}
-                    )
+            # Verifica qual função foi chamada
+            if function_name == "search_web":
+                query = function_args.get("query")
+                
+                # Executa a função e obtém o resultado
+                function_response = search_web(query)
+
+                # Envia a resposta da ferramenta de volta para o modelo
+                second_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "user", "content": user_message},
+                        response_message, # Inclui a mensagem que pediu a chamada
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "name": function_name,
+                            "content": function_response, # O conteúdo da pesquisa
+                        },
+                    ],
                 )
-                
-                tool_response = chat_session.send_message(tool_response_part)
-                
-                return jsonify({'response': tool_response.text})
-
-        return jsonify({'response': response.text})
+                return jsonify({'response': second_response.choices[0].message.content})
+        
+        # Se nenhuma ferramenta for chamada, retorna a resposta normal
+        return jsonify({'response': response_message.content})
 
     except Exception as e:
         print(f"Erro na rota /chat: {e}")
@@ -168,7 +178,10 @@ def handle_chat():
 
 @app.route('/reconhecer', methods=['POST'])
 def upload_e_reconhecer():
-    """Rota para upload e análise de arquivos (imagens, PDF, DOCX, PPTX)."""
+    """
+    Rota para upload e análise de arquivos.
+    Nota: A análise de imagem ainda usa o Gemini. A análise de texto funcionará.
+    """
     if 'file' not in request.files:
         return jsonify({'erro': 'Nenhum arquivo enviado'}), 400
 
@@ -182,6 +195,7 @@ def upload_e_reconhecer():
     conteudo_reconhecido = ""
 
     if file_extension in ['png', 'jpg', 'jpeg', 'webp']:
+        # Esta função precisa da API de Visão do Gemini ou OpenAI.
         conteudo_reconhecido = analisar_imagem_com_gemini(file.stream)
     elif file_extension in ['pdf', 'docx', 'pptx']:
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -197,14 +211,14 @@ def upload_e_reconhecer():
             if os.path.exists(file_path):
                 os.remove(file_path)
     else:
-        conteudo_reconhecido = f"Tipo de arquivo ('{file_extension}') não suportado. Por favor, envie um dos seguintes: png, jpg, pdf, docx, pptx."
+        conteudo_reconhecido = f"Tipo de arquivo ('{file_extension}') não suportado."
     
     return jsonify({'conteudo_extraido': conteudo_reconhecido})
 
 @app.route('/')
 def index():
     """Rota principal para verificar se a API está online."""
-    return "API da AEMI v1.0 com análise de arquivos e pesquisa na web está no ar!"
+    return "API da AEMI v2.0 com OpenAI e análise de arquivos está no ar!"
 
 # --- INICIALIZAÇÃO DO SERVIDOR ---
 if __name__ == '__main__':
