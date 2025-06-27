@@ -1,7 +1,7 @@
-# Arquivo: requirements.txt
-
-Flask
-gunicorn
-Flask-Cors
+flask
+flask_cors
 Pillow
-google-generativeai # A biblioteca oficial do Gemini
+google-generativeai
+PyMuPDF
+python-docx
+python-pptx
