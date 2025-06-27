@@ -5,3 +5,4 @@ google-generativeai
 PyMuPDF
 python-docx
 python-pptx
+tavily-python  # <-- ADICIONAR ESTA LINHA
