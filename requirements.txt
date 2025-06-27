@@ -5,4 +5,5 @@ google-generativeai
 PyMuPDF
 python-docx
 python-pptx
-tavily-python  # <-- ADICIONAR ESTA LINHA
+tavily-python  # <-- VERIFIQUE SE ESTA LINHA EXISTE
+gunicorn       # <-- ADICIONE ESTA LINHA (RECOMENDADO PARA PRODUÇÃO)
