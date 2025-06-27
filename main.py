@@ -4,12 +4,13 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import json
 
 # --- Importação das Ferramentas e Bibliotecas ---
 import google.generativeai as genai
 from tavily import TavilyClient # Cliente da API de pesquisa na web
 from PIL import Image # Para processar imagens
-import fitz  # PyMuPDF para PDF
+import fitz # PyMuPDF para PDF
 from docx import Document # para .docx
 from pptx import Presentation # para .pptx
 
@@ -37,6 +38,8 @@ try:
 
 except Exception as e:
     print(f"ERRO CRÍTICO DE CONFIGURAÇÃO DE API: {e}")
+    # Em um ambiente de produção, você pode querer sair do aplicativo
+    # exit(1)
 
 # --- DEFINIÇÃO DA FERRAMENTA DE PESQUISA WEB ---
 def search_web(query: str):
@@ -56,6 +59,7 @@ def search_web(query: str):
         return response.get('results', [])
     except Exception as e:
         print(f"Erro na ferramenta de pesquisa web: {e}")
+        # Retorna uma string de erro para o modelo lidar com ela
         return f"Ocorreu um erro ao tentar pesquisar: {e}"
 
 # --- INICIALIZAÇÃO DO MODELO GEMINI COM A FERRAMENTA ---
@@ -108,7 +112,10 @@ def extract_text_from_pptx(file_path):
 
 @app.route('/chat', methods=['POST'])
 def handle_chat():
-    """Rota para conversas de texto, com capacidade de pesquisa na web."""
+    """
+    Rota para conversas de texto, com capacidade de pesquisa na web.
+    Agora trata chamadas de ferramenta do Gemini para pesquisa na web.
+    """
     data = request.get_json()
     if not data or 'message' not in data:
         return jsonify({'erro': 'Mensagem não encontrada'}), 400
@@ -116,10 +123,41 @@ def handle_chat():
     user_message = data['message']
     
     try:
+        # Envia a mensagem para a sessão de chat
         response = chat_session.send_message(user_message)
+        
+        # Verifica se o modelo quer usar a ferramenta de pesquisa
+        if hasattr(response.candidates[0].content.parts[0], 'function_call'):
+            function_call = response.candidates[0].content.parts[0].function_call
+            
+            if function_call.name == 'search_web':
+                # Obtém os argumentos para a pesquisa (a consulta)
+                query = function_call.args.get('query')
+                
+                # Executa a pesquisa usando a ferramenta
+                search_results = search_web(query)
+                
+                # Envia os resultados da pesquisa de volta para o modelo para que ele gere a resposta
+                # É importante enviar os resultados formatados corretamente
+                tool_response_part = genai.protos.Part(
+                    function_response=genai.protos.FunctionResponse(
+                        name='search_web',
+                        response={'results': search_results}
+                    )
+                )
+                
+                # Envia a resposta da ferramenta de volta para o modelo
+                tool_response = chat_session.send_message(tool_response_part)
+                
+                # A resposta final será baseada nos resultados da pesquisa
+                return jsonify({'response': tool_response.text})
+
+        # Se não houver chamada de ferramenta, apenas retorna a resposta do modelo
         return jsonify({'response': response.text})
+
     except Exception as e:
         print(f"Erro na rota /chat: {e}")
+        # Retorna uma mensagem de erro genérica para o front-end
         return jsonify({'erro': f"Ocorreu um erro no servidor: {e}"}), 500
 
 @app.route('/reconhecer', methods=['POST'])
