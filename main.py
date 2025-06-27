@@ -6,17 +6,24 @@ from flask_cors import CORS
 from PIL import Image
 import io
 import google.generativeai as genai
+from werkzeug.utils import secure_filename
+
+# --- IMPORTAÇÃO DAS NOVAS BIBLIOTECAS PARA DOCUMENTOS ---
+import fitz  # PyMuPDF para PDF
+from docx import Document # para .docx
+from pptx import Presentation # para .pptx
 
 # --- CONFIGURAÇÃO INICIAL ---
-
-# Inicializa a aplicação Flask
 app = Flask(__name__)
-# Habilita o CORS
 CORS(app)
 
+# Pasta para salvar temporariamente os arquivos recebidos
+UPLOAD_FOLDER = 'temp_uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 # --- CONFIGURAÇÃO DA API DO GEMINI ---
-# Pega a chave da API a partir das variáveis de ambiente do Render.
-# É mais seguro do que colocar a chave diretamente no código.
 try:
     gemini_api_key = os.environ.get('GEMINI_API_KEY')
     if not gemini_api_key:
@@ -25,61 +32,103 @@ try:
 except Exception as e:
     print(f"ERRO DE CONFIGURAÇÃO: {e}")
 
+# --- FUNÇÕES DE EXTRAÇÃO DE TEXTO E ANÁLISE DE IMAGEM ---
 
-# --- FUNÇÃO PRINCIPAL DE ANÁLISE DE IMAGEM ---
 def analisar_imagem_com_gemini(arquivo_stream):
-    """
-    Envia uma imagem para a API do Gemini e pede uma descrição.
-    """
+    """(SUA FUNÇÃO ATUAL) Envia uma imagem para a API do Gemini e pede uma descrição."""
     try:
-        # Carrega a imagem usando a biblioteca Pillow
         img = Image.open(arquivo_stream)
-
-        # Seleciona o modelo do Gemini. 'gemini-1.5-flash' é rápido e ótimo para isso.
         model = genai.GenerativeModel('gemini-1.5-flash')
-
-        # Cria o "prompt": uma instrução e a imagem.
-        # Estamos enviando uma lista com o texto e o objeto da imagem.
         prompt_text = "Descreva esta imagem em detalhes. Se for um componente industrial como um rolamento, motor ou peça, explique o que é, sua função principal e possíveis causas de falha. Se não for um componente, apenas descreva o que você vê."
-        
-        # Gera o conteúdo
         response = model.generate_content([prompt_text, img])
-
-        # Retorna o texto da resposta do Gemini
         return response.text
-
     except Exception as e:
         print(f"ERRO AO CHAMAR A API DO GEMINI: {e}")
-        # Retorna uma mensagem de erro clara para o frontend
         return f"Ocorreu um erro ao tentar analisar a imagem com o Gemini: {str(e)}"
 
-# --- ROTA DA API ---
-# Esta rota agora usa o Gemini para tudo que for imagem.
+def extract_text_from_pdf(file_path):
+    """(NOVO) Extrai texto de um arquivo PDF."""
+    try:
+        doc = fitz.open(file_path)
+        text = "".join(page.get_text() for page in doc)
+        doc.close()
+        return text
+    except Exception as e:
+        return f"Erro ao processar PDF: {e}"
+
+def extract_text_from_docx(file_path):
+    """(NOVO) Extrai texto de um arquivo .docx."""
+    try:
+        doc = Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
+    except Exception as e:
+        return f"Erro ao processar DOCX: {e}"
+
+def extract_text_from_pptx(file_path):
+    """(NOVO) Extrai texto de um arquivo .pptx."""
+    try:
+        prs = Presentation(file_path)
+        text = ""
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text += shape.text + "\n"
+        return text
+    except Exception as e:
+        return f"Erro ao processar PPTX: {e}"
+
+# --- ROTA DA API ATUALIZADA ---
+# Esta rota agora é o "roteador" principal que decide qual função chamar.
 @app.route('/reconhecer', methods=['POST'])
 def upload_e_reconhecer():
     if 'file' not in request.files:
         return jsonify({'erro': 'Nenhum arquivo enviado'}), 400
 
     file = request.files['file']
-    filename = file.filename.lower()
+    if file.filename == '':
+        return jsonify({'erro': 'Nome de arquivo vazio'}), 400
+
+    filename = secure_filename(file.filename)
+    file_extension = filename.rsplit('.', 1)[1].lower()
     
     conteudo_reconhecido = ""
 
-    # Verifica se é uma imagem
-    if filename.endswith(('.png', '.jpg', '.jpeg')):
+    # --- LÓGICA DE ROTEAMENTO ---
+    # Se for imagem, usa o Gemini
+    if file_extension in ['png', 'jpg', 'jpeg']:
         conteudo_reconhecido = analisar_imagem_com_gemini(file.stream)
+    
+    # Se for um documento, salva temporariamente e usa a biblioteca local apropriada
+    elif file_extension in ['pdf', 'docx', 'pptx']:
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        try:
+            if file_extension == 'pdf':
+                conteudo_reconhecido = extract_text_from_pdf(file_path)
+            elif file_extension == 'docx':
+                conteudo_reconhecido = extract_text_from_docx(file_path)
+            elif file_extension == 'pptx':
+                conteudo_reconhecido = extract_text_from_pptx(file_path)
+        finally:
+            # Garante que o arquivo temporário seja sempre removido
+            if os.path.exists(file_path):
+                os.remove(file_path)
     else:
         # Resposta para outros tipos de arquivo
-        conteudo_reconhecido = f"Este sistema está configurado para analisar imagens, não arquivos do tipo '{filename.split('.')[-1]}'."
+        conteudo_reconhecido = f"Este sistema está configurado para analisar imagens, PDFs, DOCX e PPTX, mas não arquivos do tipo '{file_extension}'."
     
-    # Retorna a resposta do Gemini para o seu frontend
+    # Retorna o conteúdo extraído para o seu frontend
     return jsonify({'conteudo_extraido': conteudo_reconhecido})
 
 # Rota principal para verificar se o servidor está no ar
 @app.route('/')
 def index():
-    return "API da AEMI com análise de imagem via Gemini está no ar!"
+    return "API da AEMI com análise de imagem e documentos está no ar!"
 
 # --- INICIALIZAÇÃO DO APP ---
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    # A porta é geralmente definida pelo ambiente de produção como o Render
+    port = int(os.environ.get('PORT', 8000))
+    app.run(host='0.0.0.0', port=port)
+
