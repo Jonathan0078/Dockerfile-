@@ -2,8 +2,6 @@
 
 Flask
 gunicorn
-pytesseract
+Flask-Cors
 Pillow
-PyMuPDF
-python-docx
-Flask-Cors  # <-- ADICIONE ESTA LINHA
+google-generativeai # A biblioteca oficial do Gemini
