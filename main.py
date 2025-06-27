@@ -34,7 +34,8 @@ try:
     tavily_client = TavilyClient(api_key=tavily_api_key)
 
     if not gemini_api_key or not tavily_api_key:
-        raise ValueError("Uma ou mais chaves de API (GEMINI ou TAVILY) não foram encontradas.")
+        # Imprime um erro no log, mas permite que a API inicie para fins de depuração
+        print("AVISO: Uma ou mais chaves de API (GEMINI_API_KEY ou TAVILY_API_KEY) não foram encontradas nas variáveis de ambiente.")
 
 except Exception as e:
     print(f"ERRO CRÍTICO DE CONFIGURAÇÃO DE API: {e}")
@@ -55,9 +56,13 @@ def search_web(query: str):
         Uma lista de resultados de pesquisa relevantes para a consulta.
     """
     try:
+        # Adiciona um log para confirmar que a pesquisa está sendo chamada
+        print(f"Chamando a ferramenta de pesquisa com a query: '{query}'")
         response = tavily_client.search(query=query, search_depth="advanced", max_results=5)
+        # Retorna os resultados da pesquisa
         return response.get('results', [])
     except Exception as e:
+        # Adiciona um log detalhado do erro
         print(f"Erro na ferramenta de pesquisa web: {e}")
         # Retorna uma string de erro para o modelo lidar com ela
         return f"Ocorreu um erro ao tentar pesquisar: {e}"
@@ -116,13 +121,16 @@ def handle_chat():
     Rota para conversas de texto, com capacidade de pesquisa na web.
     Agora trata chamadas de ferramenta do Gemini para pesquisa na web.
     """
-    data = request.get_json()
-    if not data or 'message' not in data:
-        return jsonify({'erro': 'Mensagem não encontrada'}), 400
-    
-    user_message = data['message']
-    
     try:
+        # Adiciona um log para confirmar o recebimento da requisição
+        print(f"Requisição POST recebida na rota /chat")
+        
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({'erro': 'Mensagem não encontrada'}), 400
+        
+        user_message = data['message']
+        
         # Envia a mensagem para a sessão de chat
         response = chat_session.send_message(user_message)
         
@@ -130,6 +138,9 @@ def handle_chat():
         if hasattr(response.candidates[0].content.parts[0], 'function_call'):
             function_call = response.candidates[0].content.parts[0].function_call
             
+            # Adiciona um log para confirmar que a chamada de ferramenta foi detectada
+            print(f"Gemini solicitou a chamada da função: {function_call.name}")
+
             if function_call.name == 'search_web':
                 # Obtém os argumentos para a pesquisa (a consulta)
                 query = function_call.args.get('query')
@@ -137,6 +148,9 @@ def handle_chat():
                 # Executa a pesquisa usando a ferramenta
                 search_results = search_web(query)
                 
+                # Adiciona um log para mostrar o resultado da pesquisa
+                print(f"Resultados da pesquisa recebidos: {search_results[:50]}...") # Imprime os primeiros 50 caracteres
+
                 # Envia os resultados da pesquisa de volta para o modelo para que ele gere a resposta
                 # É importante enviar os resultados formatados corretamente
                 tool_response_part = genai.protos.Part(
@@ -156,6 +170,7 @@ def handle_chat():
         return jsonify({'response': response.text})
 
     except Exception as e:
+        # Adiciona um log detalhado para qualquer erro inesperado
         print(f"Erro na rota /chat: {e}")
         # Retorna uma mensagem de erro genérica para o front-end
         return jsonify({'erro': f"Ocorreu um erro no servidor: {e}"}), 500
