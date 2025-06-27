@@ -1,29 +1,22 @@
 # Arquivo: Dockerfile
 
-# 1. Começamos com uma imagem oficial do Python.
-FROM python:3.9-slim
+# 1. Imagem Base: Usar uma versão estável e slim do Python
+FROM python:3.10-slim
 
-# 2. Definimos o diretório de trabalho dentro do contêiner.
+# 2. Diretório de Trabalho: Definir o local dos arquivos dentro do contêiner
 WORKDIR /app
 
-# 3. Atualizamos os pacotes do sistema e instalamos o Tesseract.
-# O -y confirma automaticamente a instalação.
-RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-por \
-    && rm -rf /var/lib/apt/lists/*
-
-# 4. Copiamos o arquivo de dependências para o contêiner.
+# 3. Cache de Dependências: Copiar e instalar as dependências primeiro
 COPY requirements.txt .
-
-# 5. Instalamos as bibliotecas Python.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Copiamos todo o resto do código do seu projeto para o contêiner.
+# 4. Código da Aplicação: Copiar o resto do código do projeto
 COPY . .
 
-# 7. Expomos a porta que o nosso servidor gunicorn irá usar.
-EXPOSE 8000
+# 5. Expor a Porta: Informar ao Docker que a aplicação usará uma porta de rede
+# A variável $PORT é fornecida automaticamente pelo ambiente do Render.
+EXPOSE $PORT
 
-# 8. Definimos o comando para iniciar a sua aplicação quando o contêiner rodar.
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "main:app"]
+# 6. Comando de Inicialização: Como iniciar o servidor web de produção
+# Este é o comando que executa sua aplicação de forma robusta.
+CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--workers", "2", "--timeout", "120", "main:app"]
