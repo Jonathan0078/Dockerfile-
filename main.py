@@ -31,56 +31,45 @@ try:
     genai.configure(api_key=gemini_api_key)
 
     tavily_api_key = os.environ.get('TAVILY_API_KEY')
-    # O cliente da Tavily é inicializado aqui
+    
+    # --- NOVO PRINT DE DEPURAÇÃO ---
+    if tavily_api_key:
+        print("LOG DE CONFIGURAÇÃO: TAVILY_API_KEY foi carregada com sucesso!")
+    else:
+        print("LOG DE CONFIGURAÇÃO: TAVILY_API_KEY NÃO foi encontrada na variável de ambiente.")
+    # --- FIM DO PRINT DE DEPURAÇÃO ---
+    
     tavily_client = TavilyClient(api_key=tavily_api_key)
 
     if not gemini_api_key or not tavily_api_key:
-        # Imprime um aviso no log, mas permite que a API inicie para fins de depuração
-        print("AVISO: Uma ou mais chaves de API (GEMINI_API_KEY ou TAVILY_API_KEY) não foram encontradas nas variáveis de ambiente.")
+        print("AVISO: Uma ou mais chaves de API (GEMINI_API_KEY ou TAVILY_API_KEY) não foram encontradas.")
 
 except Exception as e:
     print(f"ERRO CRÍTICO DE CONFIGURAÇÃO DE API: {e}")
-    # Em um ambiente de produção, você pode querer sair do aplicativo
-    # exit(1)
 
 # --- DEFINIÇÃO DA FERRAMENTA DE PESQUISA WEB ---
 def search_web(query: str):
     """
     Pesquisa na internet usando a API Tavily para obter informações em tempo real.
-    Use esta ferramenta para responder perguntas sobre eventos atuais, notícias,
-    ou quando precisar de informações que não estão no seu conhecimento interno.
-
-    Args:
-        query: O tópico ou pergunta a ser pesquisado.
-    
-    Returns:
-        Uma lista de resultados de pesquisa relevantes para a consulta.
+    ...
     """
-    # Adiciona um log para confirmar que a pesquisa está sendo chamada
     print(f"Chamando a ferramenta de pesquisa com a query: '{query}'")
     
-    # --- NOVO TRECHO DE CÓDIGO DE TESTE DE CONEXÃO ---
+    # --- TRECHO DE CÓDIGO DE TESTE DE CONEXÃO ---
     try:
         # Tenta uma busca de teste simples para verificar a conectividade
-        # Isso verifica se a API Key é válida e se há conexão com o servidor da Tavily
         test_response = tavily_client.search(query="teste de conexao", search_depth="basic", max_results=1)
         print("TESTE DE CONEXÃO TAVILY: Conectado com sucesso!")
     except Exception as e:
-        # Se o teste falhar, imprima o erro exato
         print(f"TESTE DE CONEXÃO TAVILY: FALHA! Erro: {e}")
-        # Retorna o erro para o modelo, para que ele possa dar uma resposta útil
         return f"ERRO INTERNO: Falha na conexão com a API de pesquisa: {e}"
     # --- FIM DO TRECHO DE TESTE ---
 
     try:
-        # Se o teste passou, tente a pesquisa real
         response = tavily_client.search(query=query, search_depth="advanced", max_results=5)
-        # Retorna os resultados da pesquisa
         return response.get('results', [])
     except Exception as e:
-        # Adiciona um log detalhado do erro caso a pesquisa principal falhe por algum motivo
         print(f"Erro na ferramenta de pesquisa web (na pesquisa principal): {e}")
-        # Retorna uma string de erro para o modelo lidar com ela
         return f"Ocorreu um erro ao tentar pesquisar: {e}"
 
 # --- INICIALIZAÇÃO DO MODELO GEMINI COM A FERRAMENTA ---
@@ -138,7 +127,6 @@ def handle_chat():
     Agora trata chamadas de ferramenta do Gemini para pesquisa na web.
     """
     try:
-        # Adiciona um log para confirmar o recebimento da requisição
         print(f"Requisição POST recebida na rota /chat")
         
         data = request.get_json()
@@ -147,28 +135,20 @@ def handle_chat():
         
         user_message = data['message']
         
-        # Envia a mensagem para a sessão de chat
         response = chat_session.send_message(user_message)
         
-        # Verifica se o modelo quer usar a ferramenta de pesquisa
         if hasattr(response.candidates[0].content.parts[0], 'function_call'):
             function_call = response.candidates[0].content.parts[0].function_call
             
-            # Adiciona um log para confirmar que a chamada de ferramenta foi detectada
             print(f"Gemini solicitou a chamada da função: {function_call.name}")
 
             if function_call.name == 'search_web':
-                # Obtém os argumentos para a pesquisa (a consulta)
                 query = function_call.args.get('query')
                 
-                # Executa a pesquisa usando a ferramenta
                 search_results = search_web(query)
                 
-                # Adiciona um log para mostrar o resultado da pesquisa (apenas o início)
                 print(f"Resultados da pesquisa recebidos: {str(search_results)[:100]}...")
 
-                # Envia os resultados da pesquisa de volta para o modelo para que ele gere a resposta
-                # É importante enviar os resultados formatados corretamente
                 tool_response_part = genai.protos.Part(
                     function_response=genai.protos.FunctionResponse(
                         name='search_web',
@@ -176,19 +156,14 @@ def handle_chat():
                     )
                 )
                 
-                # Envia a resposta da ferramenta de volta para o modelo
                 tool_response = chat_session.send_message(tool_response_part)
                 
-                # A resposta final será baseada nos resultados da pesquisa
                 return jsonify({'response': tool_response.text})
 
-        # Se não houver chamada de ferramenta, apenas retorna a resposta do modelo
         return jsonify({'response': response.text})
 
     except Exception as e:
-        # Adiciona um log detalhado para qualquer erro inesperado
         print(f"Erro na rota /chat: {e}")
-        # Retorna uma mensagem de erro genérica para o front-end
         return jsonify({'erro': f"Ocorreu um erro no servidor: {e}"}), 500
 
 @app.route('/reconhecer', methods=['POST'])
