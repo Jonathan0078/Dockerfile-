@@ -1,10 +1,2 @@
-flask
-flask_cors
+Flask
 gunicorn
-werkzeug
-openai
-tavily-python
-Pillow
-PyMuPDF
-python-docx
-python-pptx
