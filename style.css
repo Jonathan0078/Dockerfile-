@@ -110,3 +110,26 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
     transform: scale(1.05);
     box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
+
+/* --- Estilos para a Visualização de Conexões --- */
+#connection-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Fica atrás dos componentes */
+    pointer-events: none; /* Permite clicar através do canvas */
+}
+
+.belt-line {
+    stroke: #34495e; /* Cor da correia */
+    stroke-width: 4px; /* Largura da correia */
+    stroke-linecap: round;
+}
+
+.shaft-line {
+    stroke: #7f8c8d; /* Cor do eixo */
+    stroke-width: 6px; /* Largura do eixo */
+    stroke-dasharray: 10 5; /* Linha tracejada para o eixo */
+}
