@@ -1,14 +1,14 @@
-/* Tema CSS - Dark & Tech */
+/* Importando fontes do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
+
 :root {
-    --bg-color: #1a1a2e;
-    --primary-color: #16213e;
-    --secondary-color: #0f3460;
-    --accent-color: #e94560;
-    --font-color: #dcdcdc;
-    --border-color: #0f3460;
-    --success-color: #32de84;
-    --warning-color: #ff9f43;
-    --error-color: #ff4d4d;
+    --cor-primaria: #003366;
+    --cor-secundaria: #005a9c;
+    --cor-destaque: #ffc107;
+    --cor-fundo: #f8f9fa;
+    --cor-texto: #212529;
+    --cor-sucesso: #28a745;
+    --cor-erro: #dc3545;
 }
 
 * {
@@ -18,139 +18,179 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--font-color);
+    font-family: 'Roboto', sans-serif;
     line-height: 1.6;
-}
-
-.container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: var(--primary-color);
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--border-color);
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
 }
 
 header {
+    background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+    color: #ffffff;
+    padding: 1.5rem 1rem;
     text-align: center;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
+    border-bottom: 5px solid var(--cor-destaque);
 }
 
 header h1 {
-    color: var(--accent-color);
-    margin-bottom: 0.5rem;
+    font-family: 'Oswald', sans-serif;
+    font-size: 2.2rem;
 }
 
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+header p {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+.main-container {
+    max-width: 800px; /* Aumentei para caber a animação */
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.calculator-container, .resultado-container, .animation-container {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     margin-bottom: 2rem;
 }
 
-.form-group label {
+h2, h3 {
+    font-family: 'Oswald', sans-serif;
+    color: var(--cor-primaria);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+.input-group label {
+    font-weight: bold;
+    color: var(--cor-texto);
     display: block;
     margin-bottom: 0.5rem;
-    font-weight: bold;
 }
 
-.form-group input,
-.form-group select {
+.input-group input[type="number"],
+.input-group select {
     width: 100%;
     padding: 0.8rem;
-    background-color: var(--secondary-color);
-    border: 1px solid var(--border-color);
+    border: 1px solid #ccc;
     border-radius: 5px;
-    color: var(--font-color);
-    font-size: 1rem;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    font-size: 1.1rem;
+    background-color: #fff;
+    font-family: 'Roboto', sans-serif;
 }
 
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 5px var(--accent-color);
-}
-
-button[type="submit"] {
+#calculate-btn {
     width: 100%;
     padding: 1rem;
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
+    font-size: 1.1rem;
     border-radius: 5px;
-    font-size: 1.2rem;
-    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+    border: none;
+    color: white;
+    font-weight: bold;
+    background-color: var(--cor-primaria);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    margin-top: 1rem;
 }
 
-button[type="submit"]:hover {
-    background-color: #c43751;
-    transform: translateY(-2px);
+#calculate-btn:hover {
+    background-color: var(--cor-secundaria);
+    transform: scale(1.02);
 }
 
-button[type="submit"]:disabled {
-    background-color: #555;
-    cursor: not-allowed;
+.resultado-container {
+    border-top: 5px solid var(--cor-sucesso);
 }
 
-#results-container {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background-color: var(--secondary-color);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-#results-container h2 {
-    color: var(--success-color);
-    margin-bottom: 1rem;
-}
-
-#results-container ul {
+.resultado-container ul {
     list-style: none;
+    padding: 0;
 }
 
-#results-container ul li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-color);
+.resultado-container li {
+    font-size: 1.1rem;
+    padding: 0.8rem 0;
     display: flex;
     justify-content: space-between;
+    border-bottom: 1px solid #eee;
 }
 
-#results-container ul li:last-child {
+.resultado-container li:last-child {
     border-bottom: none;
 }
 
-#results-container strong {
-    color: var(--success-color);
+.resultado-container strong {
+    color: var(--cor-primaria);
+    font-family: 'Roboto Mono', monospace;
+}
+
+.erro-container {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f8d7da;
+    border: 1px solid var(--cor-erro);
+    color: #721c24;
+    border-radius: 5px;
+    text-align: center;
 }
 
 .hidden {
     display: none;
 }
 
-.warning {
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: rgba(255, 159, 67, 0.2);
-    border-left: 5px solid var(--warning-color);
-    color: var(--warning-color);
-    border-radius: 5px;
+/* --- ESTILOS PARA A ANIMAÇÃO --- */
+.animation-visualizer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 50px; /* Espaço entre as polias */
+    min-height: 250px; /* Altura mínima para a área de animação */
+    padding: 20px;
+    overflow: hidden;
 }
 
-.error {
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: rgba(255, 77, 77, 0.2);
-    border-left: 5px solid var(--error-color);
-    color: var(--error-color);
-    border-radius: 5px;
+.pulley {
+    border: 5px solid var(--cor-secundaria);
+    background-color: #e0e0e0;
+    border-radius: 50%; /* Faz o div virar um círculo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 0 10px rgba(0,0,0,0.1);
 }
+
+.pulley.rotating {
+    /* A duração e direção serão definidas via JavaScript */
+    animation-name: spin;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
+.pulley::before {
+    /* Cria um "raio" para que a rotação seja visível */
+    content: '';
+    position: absolute;
+    width: 10%;
+    height: 50%;
+    background-color: var(--cor-primaria);
+    top: 0;
+    left: 45%;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
