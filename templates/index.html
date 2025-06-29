@@ -21,7 +21,10 @@
         <main id="main-workbench">
             <header class="workbench-header">
                 <h1>Bancada de Trabalho Virtual</h1>
-                <button id="analyze-button">Analisar Sistema</button>
+                <div class="header-buttons">
+                    <button id="optimize-button">Otimizar Sistema</button>
+                    <button id="analyze-button">Analisar Sistema</button>
+                </div>
             </header>
             <div id="workbench-area">
                 <svg id="connection-canvas"></svg>
@@ -42,6 +45,25 @@
                 <div id="modal-fields"></div>
                 <button type="submit">Salvar</button>
                 <button type="button" id="modal-close-btn">Cancelar</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="optimize-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3>Otimizar Sistema</h3>
+            <p>Selecione seu objetivo. O software testará combinações para encontrar a melhor solução. (Requer 1 motor, 2 polias e 2 rolamentos na bancada).</p>
+            <form id="optimize-form">
+                <div class="input-group">
+                    <label for="optimization-goal">Meu objetivo é:</label>
+                    <select id="optimization-goal" name="goal">
+                        <option value="cost">Minimizar Custo Operacional Anual</option>
+                        <option value="life">Maximizar Vida Útil do Sistema</option>
+                        <option value="efficiency">Maximizar Eficiência da Transmissão</option>
+                    </select>
+                </div>
+                <button type="submit">Encontrar Soluções</button>
+                <button type="button" id="optimize-modal-close-btn">Cancelar</button>
             </form>
         </div>
     </div>
