@@ -15,38 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let systemState = { components: [], connections: [] };
     let componentCounter = 0;
     let currentEditingComponentId = null;
-    let selectedComponentType = null;
 
-    // --- LÓGICA DE TOQUE PARA SELECIONAR E COLOCAR ---
+    // --- NOVA LÓGICA: ADICIONAR POR CLIQUE NO BOTÃO ---
     library.addEventListener('click', (e) => {
-        const componentItem = e.target.closest('.component-item');
-        if (componentItem) {
-            document.querySelectorAll('.component-item').forEach(item => item.classList.remove('selected'));
-            componentItem.classList.add('selected');
-            selectedComponentType = componentItem.dataset.type;
-            workbench.style.cursor = 'crosshair'; // Muda o cursor para indicar modo de adição
-        }
-    });
-
-    workbench.addEventListener('click', (e) => {
-        // Ignora o clique se o alvo for um componente já existente
-        if (e.target.closest('.placed-component')) {
-            return;
-        }
-
-        if (selectedComponentType) {
+        if (e.target.classList.contains('add-btn')) {
+            const type = e.target.dataset.type;
+            // Adiciona o componente no centro da área visível da bancada
             const rect = workbench.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            createComponent(selectedComponentType, x, y);
-
-            document.querySelectorAll('.component-item').forEach(item => item.classList.remove('selected'));
-            selectedComponentType = null;
-            workbench.style.cursor = 'default'; // Restaura o cursor padrão
+            const x = (rect.width / 2) - 60; // -60 para centralizar o componente
+            const y = (rect.height / 2) - 40;
+            createComponent(type, x, y);
         }
     });
-    
+
     // --- FUNÇÕES DE CRIAÇÃO E GERENCIAMENTO DE COMPONENTES ---
     function createComponent(type, x, y) {
         componentCounter++;
@@ -69,19 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const label = document.createElement('div');
             label.className = 'component-label';
             label.textContent = `${comp.type.replace(/_/g, ' ')} #${comp.id.split('_')[1]}`;
-            
+
             const dataDisplay = document.createElement('div');
             dataDisplay.className = 'component-data-display';
             dataDisplay.innerHTML = Object.entries(comp.data)
                 .map(([key, val]) => `<span>${key.replace(/_/g, ' ')}: ${val}</span>`)
                 .join('<br>');
-            
+
             el.appendChild(label);
             el.appendChild(dataDisplay);
             workbench.appendChild(el);
-            
+
             el.addEventListener('click', (e) => {
-                e.stopPropagation(); 
+                e.stopPropagation();
                 openModalForComponent(comp.id);
             });
         });
@@ -94,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!component) return;
 
         modalTitle.textContent = `Configurar ${component.type.replace(/_/g, ' ')}`;
-        
         let fieldsHtml = '';
         const data = component.data;
 
@@ -106,8 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <hr>
                     <div class="input-group"><label>Eficiência do Motor (%)</label><input type="number" step="any" name="efficiency" value="${data.efficiency || '95'}"></div>
                     <div class="input-group"><label>Custo Energia (R$/kWh)</label><input type="number" step="any" name="cost_per_kwh" value="${data.cost_per_kwh || '0.75'}"></div>
-                    <div class="input-group"><label>Horas de Operação/Dia</label><input type="number" step="any" name="operating_hours" value="${data.operating_hours || '8'}"></div>
-                `;
+                    <div class="input-group"><label>Horas de Operação/Dia</label><input type="number" step="any" name="operating_hours" value="${data.operating_hours || '8'}"></div>`;
                 break;
             case 'polia_motora':
             case 'polia_movida':
@@ -176,10 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsPanel.classList.remove('hidden');
         }
     });
-    
+
     function displayResults(results) {
         let html = '';
-        
         if (results.financeiro_energetico) {
             const fin = results.financeiro_energetico;
             html += `<h3>Análise Financeira e Energética</h3><ul>
@@ -189,13 +167,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li>Custo Anual (R$): <strong>${fin.custo_operacional_anual_brl.toLocaleString('pt-BR')}</strong></li>
             </ul>`;
         }
-
         html += '<h3>Resultados Técnicos</h3><ul>';
         for (const [key, value] of Object.entries(results.sistema)) {
             html += `<li>${key.replace(/_/g, ' ')}: <strong>${value}</strong></li>`;
         }
         html += '</ul>';
-        
         let componentLifespans = [];
         let componentHtml = '<h3>Análise de Vida Útil</h3><ul>';
         let hasLifeData = false;
@@ -207,14 +183,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         componentHtml += '</ul>';
-
         if (hasLifeData) {
             html += componentHtml;
             componentLifespans.sort((a, b) => a.life - b.life);
             const weakestLink = componentLifespans[0];
             html += `<h3 class="weakest-link">Elo Mais Fraco: ${weakestLink.id}</h3>`;
         }
-
         resultsContent.innerHTML = html;
         resultsPanel.classList.remove('hidden');
     }
