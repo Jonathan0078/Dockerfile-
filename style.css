@@ -154,3 +154,21 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
     transform: translateY(-2px);
 }
 
+/* --- Estilos para os Botões do Header --- */
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center;
+}
+#optimize-button {
+    padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 5px; cursor: pointer; border: none;
+    color: var(--cor-primaria); font-weight: bold; background-color: #fff;
+    transition: transform 0.2s, background-color 0.2s;
+}
+#optimize-button:hover { background-color: #f0f0f0; transform: scale(1.05); }
+
+/* Ajuste no layout do header para desktop */
+@media (min-width: 1024px) {
+    .header-buttons { width: auto; }
+}
