@@ -1,0 +1,34 @@
+{
+    "rolamentos": [
+        {
+            "modelo": "6004",
+            "tipo": "esferas",
+            "carga_c": 12700
+        },
+        {
+            "modelo": "6205",
+            "tipo": "esferas",
+            "carga_c": 14000
+        },
+        {
+            "modelo": "6206",
+            "tipo": "esferas",
+            "carga_c": 19500
+        },
+        {
+            "modelo": "6308",
+            "tipo": "esferas",
+            "carga_c": 41500
+        },
+        {
+            "modelo": "NU 205",
+            "tipo": "rolos",
+            "carga_c": 18300
+        },
+        {
+            "modelo": "NJ 208",
+            "tipo": "rolos",
+            "carga_c": 44200
+        }
+    ]
+}
