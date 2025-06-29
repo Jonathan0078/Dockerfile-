@@ -1,103 +1,105 @@
 import math
 from flask import Flask, request, jsonify, send_from_directory
 
-# Inicializa o servidor web Flask
-# A configuração 'static_folder' e 'static_url_path' garante que o Flask
-# encontre os arquivos HTML, CSS e JS na mesma pasta.
 app = Flask(__name__, static_folder='.', static_url_path='')
 
-# --- A classe de cálculo de transmissão ---
-class SistemaTransmissao:
-    """
-    Calcula parâmetros de um sistema de transmissão por polias e correias.
-    """
-    def __init__(self, d_motora: float, d_movida: float, rpm_motor: float, dist_centros: float, tipo_correia: str = 'V'):
-        self.d_motora = d_motora
-        self.d_movida = d_movida
-        self.rpm_motor = rpm_motor
-        self.dist_centros = dist_centros
-        self.tipo_correia = tipo_correia
+# --- O CÉREBRO DA PLATAFORMA ---
+class AnalisadorDeSistema:
+    def __init__(self, sistema_json):
+        self.componentes = sistema_json['components']
+        self.conexoes = sistema_json['connections']
+        self.resultados = {}
+
+    def analisar(self):
+        # 1. Encontrar componentes chave
+        motor = self._find_component_by_type('motor')
+        polia_motora = self._find_component_by_type('polia_motora')
+        polia_movida = self._find_component_by_type('polia_movida')
+        rolamentos = self._find_components_by_type('rolamento')
+
+        if not all([motor, polia_motora, polia_movida, rolamentos]):
+            raise ValueError("Sistema incompleto. Verifique se todos os componentes necessários foram adicionados.")
+
+        # 2. Cálculos em Cascata
+        rpm_motor = float(motor['data']['rpm'])
+        power_kw = float(motor['data']['power_kw'])
         
-        if not all(isinstance(val, (int, float)) and val > 0 for val in [d_motora, d_movida, rpm_motor, dist_centros]):
-            raise ValueError("Todos os valores numéricos devem ser positivos.")
-        if dist_centros <= (d_motora + d_movida) / 2:
-            raise ValueError("Distância entre centros muito pequena, as polias estão se sobrepondo.")
+        d_motora = float(polia_motora['data']['diameter'])
+        d_movida = float(polia_movida['data']['diameter'])
 
-        self.relacao_transmissao = self.calcular_relacao_transmissao()
-        self.rpm_movida = self.calcular_rotacao_transmitida()
-        self.comprimento_correia = self.calcular_comprimento_correia()
-        self.velocidade_correia_mps = self.calcular_velocidade_correia()
-        self.arco_contato_graus = self.calcular_arco_contato()
-
-    def calcular_relacao_transmissao(self):
-        return self.d_movida / self.d_motora
-
-    def calcular_rotacao_transmitida(self):
-        relacao = self.relacao_transmissao
-        rpm_teorico = self.rpm_motor / relacao
+        # Relação de transmissão e RPM final
+        relacao_transmissao = d_movida / d_motora
+        rpm_movida = rpm_motor / relacao_transmissao
         
-        if self.tipo_correia.upper() == 'V':
-            escorregamento = 0.015
-            return rpm_teorico * (1 - escorregamento)
-        else:
-            return rpm_teorico
-
-    def calcular_comprimento_correia(self):
-        termo1 = 2 * self.dist_centros
-        termo2 = math.pi * (self.d_movida + self.d_motora) / 2
-        termo3 = (self.d_movida - self.d_motora)**2 / (4 * self.dist_centros)
-        return termo1 + termo2 + termo3
+        # Cálculo de Torque e Tensão na Correia
+        power_watts = power_kw * 1000
+        torque_motor_nm = (power_watts * 60) / (2 * math.pi * rpm_motor) if rpm_motor > 0 else 0
         
-    def calcular_velocidade_correia(self):
-        return (math.pi * self.d_motora * self.rpm_motor) / 60000
+        # T = F1+F2, e F1-F2 = Torque/(d/2). Simplificando com fator de serviço (aprox. F1=1.5*F_trans, F2=0.5*F_trans)
+        # Tensão total nos eixos ≈ 2 * Força de Transmissão * Fator de Serviço (aprox 1.5)
+        forca_transmissao = torque_motor_nm / (d_motora / 2000) if d_motora > 0 else 0
+        tensao_total_na_correia = 2 * forca_transmissao 
+        
+        # 3. Análise de Vida Útil dos Rolamentos
+        # Simplificação: A carga da tensão é distribuída igualmente entre os rolamentos do eixo movido.
+        carga_radial_por_rolamento = tensao_total_na_correia / len(rolamentos)
 
-    def calcular_arco_contato(self):
+        for rolamento in rolamentos:
+            vida_util_l10h = self._calcular_vida_l10h(rolamento, carga_radial_por_rolamento, rpm_movida)
+            rol_id = rolamento['id']
+            self.resultados[rol_id] = {'tipo': 'Rolamento', 'vida_util_l10h': round(vida_util_l10h)}
+
+        # 4. Consolidar resultados gerais
+        self.resultados['sistema'] = {
+            'relacao_transmissao': round(relacao_transmissao, 2),
+            'rpm_final': round(rpm_movida, 2),
+            'torque_motor_nm': round(torque_motor_nm, 2),
+            'tensao_total_correia_N': round(tensao_total_na_correia, 2),
+            'carga_radial_por_rolamento_N': round(carga_radial_por_rolamento, 2)
+        }
+        
+        return self.resultados
+
+    def _calcular_vida_l10h(self, rolamento, carga_radial, rpm):
+        """ Calcula a vida útil L10h usando a fórmula ISO 281. """
         try:
-            ratio = (self.d_movida - self.d_motora) / (2 * self.dist_centros)
-            if not -1 <= ratio <= 1:
-                return 0
-            radianos = math.pi - 2 * math.asin(ratio)
-            return math.degrees(radianos)
-        except (ValueError, TypeError):
+            C = float(rolamento['data']['dynamic_load_c'])
+            P = carga_radial  # Para carga puramente radial, P = Fr
+            
+            # Expoente 'p': 3 para esferas, 10/3 para rolos
+            p = 3 if rolamento['data']['bearing_type'] == 'esferas' else 10/3
+
+            if P <= 0: return float('inf') # Vida infinita se não há carga
+
+            l10h = (10**6 / (60 * rpm)) * ((C / P)**p) if rpm > 0 else float('inf')
+            return l10h
+        except (KeyError, ValueError, ZeroDivisionError):
             return 0
 
-    def to_dict(self):
-        """Converte os resultados da classe em um dicionário para ser enviado como JSON."""
-        return {
-            'relacao_transmissao': self.relacao_transmissao,
-            'rpm_movida': self.rpm_movida,
-            'comprimento_correia': self.comprimento_correia,
-            'velocidade_correia_mps': self.velocidade_correia_mps,
-            'arco_contato_graus': self.arco_contato_graus
-        }
+    def _find_component_by_type(self, tipo):
+        for comp in self.componentes:
+            if comp['type'] == tipo:
+                return comp
+        return None
 
-# --- Rota da API que o JavaScript vai chamar ---
-@app.route('/calculate', methods=['POST'])
-def calculate():
+    def _find_components_by_type(self, tipo):
+        return [comp for comp in self.componentes if comp['type'] == tipo]
+
+# --- Rota da API ---
+@app.route('/analyze_system', methods=['POST'])
+def analyze_system_route():
     try:
-        data = request.get_json()
-        required_keys = ['d_motora', 'd_movida', 'rpm_motor', 'dist_centros', 'tipo_correia']
-        if not all(key in data for key in required_keys):
-            return jsonify({'error': 'Dados de entrada incompletos'}), 400
-
-        sistema = SistemaTransmissao(
-            d_motora=float(data['d_motora']),
-            d_movida=float(data['d_movida']),
-            rpm_motor=float(data['rpm_motor']),
-            dist_centros=float(data['dist_centros']),
-            tipo_correia=data['tipo_correia']
-        )
-        
-        return jsonify(sistema.to_dict())
-    except (ValueError, TypeError) as e:
-        return jsonify({'error': str(e)}), 400
+        sistema_data = request.get_json()
+        analisador = AnalisadorDeSistema(sistema_data)
+        resultados = analisador.analisar()
+        return jsonify(resultados)
     except Exception as e:
-        return jsonify({'error': f'Ocorreu um erro interno no servidor: {e}'}), 500
+        return jsonify({'error': str(e)}), 400
 
-# --- Rota para servir a página principal (index.html) ---
+# --- Rota para servir a página principal ---
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
