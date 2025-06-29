@@ -144,3 +144,10 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
         padding: 0;
     }
 }
+/* --- Estilo para o item selecionado na biblioteca --- */
+.component-item.selected {
+    background-color: var(--cor-destaque) !important;
+    color: var(--cor-primaria);
+    border-color: var(--cor-primaria) !important;
+    border-style: solid !important;
+}
