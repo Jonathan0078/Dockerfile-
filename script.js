@@ -15,25 +15,40 @@ document.addEventListener('DOMContentLoaded', () => {
     let systemState = { components: [], connections: [] };
     let componentCounter = 0;
     let currentEditingComponentId = null;
+    
+    // --- MELHORIA: Variável para o modo "tocar para colocar" ---
+    let selectedComponentType = null;
 
-    // --- LÓGICA DE DRAG & DROP ---
-    library.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('component-item')) {
-            e.dataTransfer.setData('text/plain', e.target.dataset.type);
+    // --- LÓGICA DE TOQUE PARA SELECIONAR E COLOCAR ---
+    library.addEventListener('click', (e) => {
+        // Verifica se o clique foi em um item da biblioteca
+        const componentItem = e.target.closest('.component-item');
+        if (componentItem) {
+            // Remove a seleção de qualquer outro item
+            document.querySelectorAll('.component-item').forEach(item => item.classList.remove('selected'));
+            
+            // Adiciona a classe 'selected' ao item clicado
+            componentItem.classList.add('selected');
+            selectedComponentType = componentItem.dataset.type;
         }
     });
 
-    workbench.addEventListener('dragover', (e) => e.preventDefault());
+    workbench.addEventListener('click', (e) => {
+        // Se um componente estiver selecionado na biblioteca...
+        if (selectedComponentType) {
+            const x = e.clientX - workbench.getBoundingClientRect().left;
+            const y = e.clientY - workbench.getBoundingClientRect().top;
+            
+            // Cria o componente na posição do clique
+            createComponent(selectedComponentType, x, y);
 
-    workbench.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const type = e.dataTransfer.getData('text/plain');
-        const x = e.clientX - workbench.getBoundingClientRect().left;
-        const y = e.clientY - workbench.getBoundingClientRect().top;
-        createComponent(type, x, y);
+            // Limpa a seleção para que o usuário possa interagir normalmente
+            document.querySelectorAll('.component-item').forEach(item => item.classList.remove('selected'));
+            selectedComponentType = null;
+        }
     });
 
-    // --- FUNÇÕES DE CRIAÇÃO E GERENCIAMENTO ---
+    // --- FUNÇÕES DE CRIAÇÃO E GERENCIAMENTO (sem alterações) ---
     function createComponent(type, x, y) {
         componentCounter++;
         const id = `comp_${componentCounter}`;
@@ -44,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderWorkbench() {
-        workbench.innerHTML = ''; // Limpa e redesenha tudo
+        workbench.innerHTML = '';
         systemState.components.forEach(comp => {
             const el = document.createElement('div');
             el.className = `placed-component ${comp.type}`;
@@ -64,19 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
             el.appendChild(dataDisplay);
             workbench.appendChild(el);
             
-            // Adicionar evento de clique para re-editar
-            el.addEventListener('click', () => openModalForComponent(comp.id));
+            el.addEventListener('click', (e) => {
+                e.stopPropagation(); // Impede que o clique no componente tente colocar outro item
+                openModalForComponent(comp.id);
+            });
         });
     }
 
-    // --- LÓGICA DO MODAL DE DADOS ---
+    // --- LÓGICA DO MODAL DE DADOS (sem alterações) ---
     function openModalForComponent(id) {
         currentEditingComponentId = id;
         const component = systemState.components.find(c => c.id === id);
         modalTitle.textContent = `Configurar ${component.type.replace('_', ' ')}`;
         
         let fieldsHtml = '';
-        // Define os campos necessários para cada tipo de componente
         switch (component.type) {
             case 'motor':
                 fieldsHtml = `
@@ -117,29 +133,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
 
-    // --- LÓGICA DE ANÁLISE ---
+    // --- LÓGICA DE ANÁLISE (sem alterações) ---
     analyzeButton.addEventListener('click', async () => {
         if (systemState.components.length === 0) {
             alert("Bancada de trabalho vazia. Adicione componentes para analisar.");
             return;
         }
-
-        // Simplificação: Conexões implícitas pela ordem e tipo. Poderia ser expandido com linhas visuais.
         const payload = { components: systemState.components, connections: [] };
-
         try {
             const response = await fetch('/analyze_system', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-
             const results = await response.json();
-            
-            if (results.error) {
-                throw new Error(results.error);
-            }
-
+            if (results.error) { throw new Error(results.error); }
             displayResults(results);
         } catch (error) {
             resultsContent.innerHTML = `<div style="color: var(--cor-erro);"><strong>Erro na análise:</strong> ${error.message}</div>`;
@@ -153,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `<li>${key.replace(/_/g, ' ')}: <strong>${value}</strong></li>`;
         }
         html += '</ul><h3>Análise de Componentes</h3><ul>';
-
         let componentLifespans = [];
         for (const [id, data] of Object.entries(results)) {
             if (id !== 'sistema') {
@@ -161,14 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 componentLifespans.push({ id, life: data.vida_util_l10h });
             }
         }
-        
-        // Encontra o elo mais fraco
         if (componentLifespans.length > 0) {
             componentLifespans.sort((a, b) => a.life - b.life);
             const weakestLink = componentLifespans[0];
             html += `</ul><h3 class="weakest-link">Elo Mais Fraco: ${weakestLink.id}</h3>`;
         }
-
         resultsContent.innerHTML = html;
         resultsPanel.classList.remove('hidden');
     }
