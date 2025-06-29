@@ -40,3 +40,39 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
 .belt-line { stroke: #34495e; stroke-width: 4px; stroke-linecap: round; }
 #generate-pdf-btn { width: 100%; padding: 0.8rem; margin-top: 1.5rem; font-size: 1rem; border-radius: 5px; cursor: pointer; border: none; color: white; font-weight: bold; background-color: var(--cor-secundaria); transition: background-color 0.3s, transform 0.2s; }
 #generate-pdf-btn:hover { background-color: var(--cor-primaria); transform: translateY(-2px); }
+/* --- Estilos para os Botões do Header --- */
+.header-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+#optimize-button {
+    padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 5px; cursor: pointer; border: none;
+    color: var(--cor-primaria); font-weight: bold; background-color: #fff;
+    transition: transform 0.2s, background-color 0.2s;
+}
+#optimize-button:hover { background-color: #f0f0f0; transform: scale(1.05); }
+
+/* Estilos para a tabela de resultados da otimização */
+#results-content table {
+    width: 100%;
+    margin-top: 1rem;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+#results-content th, #results-content td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+#results-content th {
+    background-color: var(--cor-fundo);
+    font-family: 'Oswald', sans-serif;
+    color: var(--cor-primaria);
+}
+
+/* Ajuste no layout do header para desktop */
+@media (min-width: 1024px) {
+    .header-buttons { width: auto; flex-direction: row; }
+}
