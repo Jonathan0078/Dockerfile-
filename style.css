@@ -98,3 +98,15 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
     #results-panel { width: 350px; height: 100vh; border-left: 1px solid #ddd; border-top: none; }
     #results-panel.hidden { width: 0; padding: 0; }
 }
+
+/* --- Estilos para o arraste de componentes --- */
+.placed-component {
+    cursor: move; /* Muda o cursor para indicar que é arrastável */
+}
+
+.placed-component.dragging {
+    opacity: 0.7;
+    z-index: 1000; /* Garante que o item arrastado fique por cima de tudo */
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
