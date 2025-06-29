@@ -8,36 +8,29 @@
 body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); color: var(--cor-texto); }
 
 /* --- Estrutura Principal (Mobile-First) --- */
-.platform-container { 
-    display: flex;
-    flex-direction: column; /* Organiza em coluna por padrão (para celular) */
-    width: 100%;
-    min-height: 100vh;
-}
+.platform-container { display: flex; flex-direction: column; width: 100%; min-height: 100vh; }
 
 /* --- Barra Lateral de Componentes --- */
 #component-library {
-    width: 100%; /* Ocupa a largura toda no celular */
-    background: #ffffff; 
-    padding: 1.5rem; 
-    border-bottom: 1px solid #ddd; /* Borda inferior no celular */
+    width: 100%; background: #ffffff; padding: 1.5rem; border-bottom: 1px solid #ddd;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 #component-library h2 { font-family: 'Oswald', sans-serif; color: var(--cor-primaria); margin-bottom: 1.5rem; text-align: center; }
 .component-item {
-    padding: 1rem; margin-bottom: 1rem; border: 2px dashed #ccc; border-radius: 8px;
-    text-align: center; font-weight: bold; cursor: grab; user-select: none;
-    transition: background-color 0.2s, border-color 0.2s;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 8px;
+    font-weight: bold; user-select: none;
 }
-.component-item:hover { background-color: #e9ecef; border-color: var(--cor-secundaria); }
+.add-btn {
+    background-color: var(--cor-sucesso); color: white; border: none;
+    border-radius: 50%; width: 40px; height: 40px; font-size: 1.8rem;
+    cursor: pointer; line-height: 40px; text-align: center;
+    transition: transform 0.2s, background-color 0.2s;
+}
+.add-btn:hover { background-color: #218838; transform: scale(1.1); }
 
 /* --- Bancada de Trabalho Principal --- */
-#main-workbench { 
-    width: 100%;
-    flex-grow: 1; /* Faz esta área crescer para ocupar o espaço restante */
-    display: flex; 
-    flex-direction: column; 
-}
+#main-workbench { width: 100%; flex-grow: 1; display: flex; flex-direction: column; }
 .workbench-header {
     background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria)); color: #fff;
     padding: 1rem 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;
@@ -45,23 +38,18 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
 }
 .workbench-header h1 { font-family: 'Oswald', sans-serif; font-size: 1.8rem; text-align: center; }
 #analyze-button {
-    width: 100%; max-width: 300px;
-    padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 5px; cursor: pointer; border: none;
+    width: 100%; max-width: 300px; padding: 0.8rem 1.5rem; font-size: 1rem; border-radius: 5px; cursor: pointer; border: none;
     color: var(--cor-primaria); font-weight: bold; background-color: var(--cor-destaque);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 #analyze-button:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
 
 #workbench-area {
-    width: 100%;
-    flex-grow: 1; 
-    position: relative; 
-    overflow: auto; /* Permite scroll se necessário */
+    width: 100%; flex-grow: 1; position: relative; overflow: auto;
     background-color: #fff; background-image: 
     linear-gradient(rgba(0, 90, 156, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 90, 156, 0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
-    min-height: 400px; /* Garante uma altura mínima para arrastar os itens */
+    background-size: 20px 20px; min-height: 400px;
 }
 .placed-component {
     position: absolute; padding: 10px; border-radius: 8px; background-color: #fff;
@@ -77,22 +65,13 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
 
 /* --- Painel de Resultados --- */
 #results-panel {
-    width: 100%;
-    background: #ffffff; padding: 1.5rem; border-top: 1px solid #ddd;
+    width: 100%; background: #ffffff; padding: 1.5rem; border-top: 1px solid #ddd;
     overflow-y: auto; transition: all 0.3s ease;
 }
-#results-panel.hidden {
-    max-height: 0;
-    padding: 0 1.5rem;
-    overflow: hidden;
-    border: none;
-}
+#results-panel.hidden { max-height: 0; padding: 0 1.5rem; overflow: hidden; border: none; }
 #results-panel h2 { font-family: 'Oswald', sans-serif; color: var(--cor-primaria); }
 #results-panel ul { list-style: none; padding: 0; }
-#results-panel li {
-    padding: 0.5rem 0; display: flex; justify-content: space-between;
-    border-bottom: 1px solid #eee;
-}
+#results-panel li { padding: 0.5rem 0; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; }
 #results-panel strong { color: var(--cor-secundaria); }
 .weakest-link { color: var(--cor-erro); font-weight: bold; }
 
@@ -110,44 +89,12 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
 .modal-content input, .modal-content select { width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 5px; }
 .hidden { display: none !important; }
 
-/* --- DESIGN RESPONSIVO PARA TELAS MAIORES (TABLETS E DESKTOPS) --- */
+/* --- DESIGN RESPONSIVO PARA TELAS MAIORES --- */
 @media (min-width: 1024px) {
-    .platform-container {
-        flex-direction: row; /* Volta ao layout horizontal */
-    }
-
-    #component-library {
-        width: 250px; /* Largura fixa para a barra lateral */
-        height: 100vh;
-        border-right: 1px solid #ddd; /* Borda lateral no desktop */
-        border-bottom: none;
-    }
-
-    .workbench-header {
-        flex-direction: row; /* Header com título e botão lado a lado */
-        justify-content: space-between;
-    }
-
-    #analyze-button {
-        width: auto; /* Largura automática para o botão */
-    }
-
-    #results-panel {
-        width: 350px; /* Largura fixa para o painel de resultados */
-        height: 100vh;
-        border-left: 1px solid #ddd; /* Borda lateral no desktop */
-        border-top: none;
-    }
-    
-    #results-panel.hidden {
-        width: 0; /* Esconde o painel de resultados no desktop */
-        padding: 0;
-    }
-}
-/* --- Estilo para o item selecionado na biblioteca --- */
-.component-item.selected {
-    background-color: var(--cor-destaque) !important;
-    color: var(--cor-primaria);
-    border-color: var(--cor-primaria) !important;
-    border-style: solid !important;
+    .platform-container { flex-direction: row; }
+    #component-library { width: 250px; height: 100vh; border-right: 1px solid #ddd; border-bottom: none; }
+    .workbench-header { flex-direction: row; justify-content: space-between; }
+    #analyze-button { width: auto; }
+    #results-panel { width: 350px; height: 100vh; border-left: 1px solid #ddd; border-top: none; }
+    #results-panel.hidden { width: 0; padding: 0; }
 }
