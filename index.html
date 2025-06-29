@@ -3,65 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Polias e Correias</title>
+    <title>Plataforma de Engenharia Integrada</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>Calculadora de Transmissão por Polias</h1>
-        <p>Análise de Velocidade e Dimensionamento de Correias</p>
-    </header>
+    <div class="platform-container">
+        <aside id="component-library">
+            <h2>Biblioteca</h2>
+            <div class="component-item" draggable="true" data-type="motor">Motor</div>
+            <div class="component-item" draggable="true" data-type="polia_motora">Polia Motora</div>
+            <div class="component-item" draggable="true" data-type="polia_movida">Polia Movida</div>
+            <div class="component-item" draggable="true" data-type="rolamento">Rolamento</div>
+        </aside>
 
-    <div class="main-container">
-        <div id="animation-area" class="animation-container hidden">
-            <h3>Visualização do Sistema</h3>
-            <div class="animation-visualizer">
-                <div id="polia-motora" class="pulley"></div>
-                <div id="polia-movida" class="pulley"></div>
-            </div>
-        </div>
-
-        <div class="calculator-container">
-            <h2>Parâmetros do Sistema</h2>
-            <form id="calculation-form">
-                <div class="input-group">
-                    <label for="d_motora">Diâmetro Polia Motora (mm)</label>
-                    <input type="number" id="d_motora" name="d_motora" step="0.1" required>
+        <main id="main-workbench">
+            <header class="workbench-header">
+                <h1>Bancada de Trabalho Virtual</h1>
+                <button id="analyze-button">Analisar Sistema</button>
+            </header>
+            <div id="workbench-area">
                 </div>
+        </main>
 
-                <div class="input-group">
-                    <label for="d_movida">Diâmetro Polia Movida (mm)</label>
-                    <input type="number" id="d_movida" name="d_movida" step="0.1" required>
-                </div>
+        <aside id="results-panel" class="hidden">
+            <h2>Análise do Sistema</h2>
+            <div id="results-content"></div>
+        </aside>
+    </div>
 
-                <div class="input-group">
-                    <label for="rpm_motor">Rotação do Motor (RPM)</label>
-                    <input type="number" id="rpm_motor" name="rpm_motor" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="dist_centros">Distância entre Centros (mm)</label>
-                    <input type="number" id="dist_centros" name="dist_centros" step="0.1" required>
-                </div>
-                
-                <input type="hidden" id="tipo_correia" name="tipo_correia" value="V">
-
-                <button type="submit" id="calculate-btn">Calcular e Simular</button>
+    <div id="component-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Configurar Componente</h3>
+            <form id="modal-form">
+                <div id="modal-fields"></div>
+                <button type="submit">Salvar</button>
+                <button type="button" id="modal-close-btn">Cancelar</button>
             </form>
         </div>
-
-        <div id="results-container" class="resultado-container hidden">
-            <h2>Resultados do Dimensionamento</h2>
-            <ul>
-                <li>Relação de Transmissão: <strong id="res-relacao">--</strong></li>
-                <li>Rotação Transmitida (Polia Movida): <strong id="res-rpm-movida">--</strong></li>
-                <li>Comprimento Primitivo da Correia: <strong id="res-comprimento">--</strong></li>
-                <li>Velocidade da Correia: <strong id="res-velocidade">--</strong></li>
-                <li>Arco de Contato (Polia Menor): <strong id="res-arco">--</strong></li>
-            </ul>
-        </div>
-
-        <div id="error-message" class="erro-container hidden"></div>
     </div>
 
     <script src="script.js"></script>
