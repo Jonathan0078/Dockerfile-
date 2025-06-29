@@ -1,34 +1,18 @@
 {
     "rolamentos": [
-        {
-            "modelo": "6004",
-            "tipo": "esferas",
-            "carga_c": 12700
-        },
-        {
-            "modelo": "6205",
-            "tipo": "esferas",
-            "carga_c": 14000
-        },
-        {
-            "modelo": "6206",
-            "tipo": "esferas",
-            "carga_c": 19500
-        },
-        {
-            "modelo": "6308",
-            "tipo": "esferas",
-            "carga_c": 41500
-        },
-        {
-            "modelo": "NU 205",
-            "tipo": "rolos",
-            "carga_c": 18300
-        },
-        {
-            "modelo": "NJ 208",
-            "tipo": "rolos",
-            "carga_c": 44200
-        }
-    ]
+        { "modelo": "6004", "tipo": "esferas", "carga_c": 12700 },
+        { "modelo": "6203", "tipo": "esferas", "carga_c": 9560 },
+        { "modelo": "6205", "tipo": "esferas", "carga_c": 14000 },
+        { "modelo": "6206", "tipo": "esferas", "carga_c": 19500 },
+        { "modelo": "6305", "tipo": "esferas", "carga_c": 23400 },
+        { "modelo": "6308", "tipo": "esferas", "carga_c": 41500 },
+        { "modelo": "NU 205", "tipo": "rolos", "carga_c": 18300 },
+        { "modelo": "NU 206", "tipo": "rolos", "carga_c": 30700 },
+        { "modelo": "NJ 208", "tipo": "rolos", "carga_c": 44200 }
+    ],
+    "polias": {
+        "diametros_comerciais_mm": [
+            80, 90, 100, 112, 125, 140, 150, 160, 180, 200, 224, 250, 280, 315
+        ]
+    }
 }
