@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plataforma de Engenharia Integrada</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="platform-container">
@@ -23,25 +25,18 @@
             </header>
             <div id="workbench-area">
                 <svg id="connection-canvas"></svg>
-                </div>
+            </div>
         </main>
 
         <aside id="results-panel" class="hidden">
             <h2>Análise do Sistema</h2>
             <div id="results-content"></div>
+            <button id="generate-pdf-btn" class="hidden">Gerar Relatório PDF</button>
         </aside>
     </div>
 
     <div id="component-modal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h3 id="modal-title">Configurar Componente</h3>
-            <form id="modal-form">
-                <div id="modal-fields"></div>
-                <button type="submit">Salvar</button>
-                <button type="button" id="modal-close-btn">Cancelar</button>
-            </form>
         </div>
-    </div>
 
     <script src="script.js"></script>
 </body>
