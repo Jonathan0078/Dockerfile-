@@ -133,3 +133,24 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
     stroke-width: 6px; /* Largura do eixo */
     stroke-dasharray: 10 5; /* Linha tracejada para o eixo */
 }
+
+/* --- Estilos para o Botão de Gerar PDF --- */
+#generate-pdf-btn {
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    color: white;
+    font-weight: bold;
+    background-color: var(--cor-secundaria);
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#generate-pdf-btn:hover {
+    background-color: var(--cor-primaria);
+    transform: translateY(-2px);
+}
+
