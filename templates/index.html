@@ -12,61 +12,47 @@
     <div class="platform-container">
         <aside id="component-library">
             <h2>Biblioteca</h2>
-            <div class="component-item"><button class="add-btn" data-type="motor">+</button><span>Motor</span></div>
-            <div class="component-item"><button class="add-btn" data-type="polia_motora">+</button><span>Polia Motora</span></div>
-            <div class="component-item"><button class="add-btn" data-type="polia_movida">+</button><span>Polia Movida</span></div>
-            <div class="component-item"><button class="add-btn" data-type="rolamento">+</button><span>Rolamento</span></div>
+            <div class="component-item"><button class="add-btn" data-type="motor" title="Adicionar Motor">+</button><span>Motor</span></div>
+            <div class="component-item"><button class="add-btn" data-type="polia_motora" title="Adicionar Polia Motora">+</button><span>Polia Motora</span></div>
+            <div class="component-item"><button class="add-btn" data-type="polia_movida" title="Adicionar Polia Movida">+</button><span>Polia Movida</span></div>
+            <div class="component-item"><button class="add-btn" data-type="rolamento" title="Adicionar Rolamento">+</button><span>Rolamento</span></div>
         </aside>
 
         <main id="main-workbench">
             <header class="workbench-header">
                 <h1>Bancada de Trabalho Virtual</h1>
                 <div class="header-buttons">
-                    <button id="optimize-button">Otimizar Sistema</button>
-                    <button id="analyze-button">Analisar Sistema</button>
+                    <button id="clear-button" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                        Limpar
+                    </button>
+                    <button id="optimize-button" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.858 2.929 2.929 0 0 1 0 5.858z"/></svg>
+                        Otimizar
+                    </button>
+                    <button id="analyze-button" class="btn btn-highlight">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+                        Analisar
+                    </button>
                 </div>
             </header>
             <div id="workbench-area">
                 <svg id="connection-canvas"></svg>
             </div>
         </main>
-
+        
         <aside id="results-panel" class="hidden">
             <h2>Análise do Sistema</h2>
             <div id="results-content"></div>
-            <button id="generate-pdf-btn" class="hidden">Gerar Relatório PDF</button>
+            <button id="generate-pdf-btn" class="btn btn-secondary hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L6.354 8.146a.5.5 0 1 0-.708.708l2 2z"/></svg>
+                Gerar Relatório PDF
+            </button>
         </aside>
     </div>
 
-    <div id="component-modal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h3 id="modal-title">Configurar Componente</h3>
-            <form id="modal-form">
-                <div id="modal-fields"></div>
-                <button type="submit">Salvar</button>
-                <button type="button" id="modal-close-btn">Cancelar</button>
-            </form>
-        </div>
-    </div>
-    
-    <div id="optimize-modal" class="modal-backdrop hidden">
-        <div class="modal-content">
-            <h3>Otimizar Sistema</h3>
-            <p>Selecione seu objetivo. O software testará combinações para encontrar a melhor solução. (Requer 1 motor, 2 polias e 2 rolamentos na bancada).</p>
-            <form id="optimize-form">
-                <div class="input-group">
-                    <label for="optimization-goal">Meu objetivo é:</label>
-                    <select id="optimization-goal" name="goal">
-                        <option value="cost">Minimizar Custo Operacional Anual</option>
-                        <option value="life">Maximizar Vida Útil do Sistema</option>
-                        <option value="efficiency">Maximizar Eficiência da Transmissão</option>
-                    </select>
-                </div>
-                <button type="submit">Encontrar Soluções</button>
-                <button type="button" id="optimize-modal-close-btn">Cancelar</button>
-            </form>
-        </div>
-    </div>
+    <div id="component-modal" class="modal-backdrop hidden"></div>
+    <div id="optimize-modal" class="modal-backdrop hidden"></div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
