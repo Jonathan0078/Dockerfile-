@@ -1,43 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma de Engenharia Integrada</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-</head>
+    </head>
 <body>
     <div class="platform-container">
         <aside id="component-library">
             <h2>Biblioteca</h2>
-            <div class="component-item" data-type="motor"><span>Motor</span><button class="add-btn" data-type="motor">+</button></div>
-            <div class="component-item" data-type="polia_motora"><span>Polia Motora</span><button class="add-btn" data-type="polia_motora">+</button></div>
-            <div class="component-item" data-type="polia_movida"><span>Polia Movida</span><button class="add-btn" data-type="polia_movida">+</button></div>
-            <div class="component-item" data-type="rolamento"><span>Rolamento</span><button class="add-btn" data-type="rolamento">+</button></div>
-        </aside>
+            </aside>
 
         <main id="main-workbench">
             <header class="workbench-header">
                 <h1>Bancada de Trabalho Virtual</h1>
-                <button id="analyze-button">Analisar Sistema</button>
+                <div class="header-buttons">
+                    <button id="optimize-button">Otimizar Sistema</button>
+                    <button id="analyze-button">Analisar Sistema</button>
+                </div>
             </header>
             <div id="workbench-area">
                 <svg id="connection-canvas"></svg>
             </div>
         </main>
-
-        <aside id="results-panel" class="hidden">
-            <h2>Análise do Sistema</h2>
-            <div id="results-content"></div>
-            <button id="generate-pdf-btn" class="hidden">Gerar Relatório PDF</button>
-        </aside>
-    </div>
-
-    <div id="component-modal" class="modal-backdrop hidden">
+        
         </div>
 
+    <div id="optimize-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3>Otimizar Sistema</h3>
+            <p>Selecione seu objetivo principal. O software irá testar combinações de polias e rolamentos para encontrar a melhor solução.</p>
+            <form id="optimize-form">
+                <div class="input-group">
+                    <label for="optimization-goal">Meu objetivo é:</label>
+                    <select id="optimization-goal" name="goal">
+                        <option value="cost">Minimizar Custo Operacional Anual</option>
+                        <option value="life">Maximizar Vida Útil do Sistema</option>
+                        <option value="efficiency">Maximizar Eficiência da Transmissão</option>
+                    </select>
+                </div>
+                <button type="submit">Encontrar Soluções</button>
+                <button type="button" id="optimize-modal-close-btn">Cancelar</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
