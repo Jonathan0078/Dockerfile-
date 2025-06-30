@@ -1,14 +1,223 @@
 const { jsPDF } = window.jspdf;
 
 // Estado global
-let systemState = { components: [], connections: [] };
+let systemState = { components: [] };
 let componentCounter = 0;
 let currentEditingComponentId = null;
-let lastResults = {};
-let componentDatabase = {};
 let activeComponent = null;
 let offsetX = 0;
 let offsetY = 0;
+
+// Renderiza a bancada com SVGs animados realistas
+function renderWorkbench() {
+    const workbench = document.getElementById('main-workbench')?.querySelector('#workbench-area');
+    if (!workbench) return;
+    workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
+
+    systemState.components.forEach(comp => {
+        const el = document.createElement('div');
+        el.className = `placed-component ${comp.type}`;
+        el.id = comp.id;
+        el.style.position = 'absolute';
+        el.style.left = `${comp.x}px`;
+        el.style.top = `${comp.y}px`;
+        el.setAttribute('tabindex', '0');
+
+        // SVG realista para cada componente
+        if (comp.type === 'motor') {
+            el.innerHTML = `
+            <svg width="60" height="60" viewBox="0 0 60 60" class="girar">
+              <!-- Corpo do motor -->
+              <rect x="10" y="20" width="40" height="20" rx="8" fill="#888"/>
+              <!-- Eixo -->
+              <rect x="5" y="27" width="7" height="6" fill="#555"/>
+              <rect x="48" y="27" width="7" height="6" fill="#555"/>
+              <!-- Bobinas -->
+              <ellipse cx="30" cy="30" rx="7" ry="10" fill="#bbb" stroke="#666" stroke-width="1"/>
+              <!-- Ventoinha -->
+              <g>
+                <circle cx="30" cy="30" r="6" fill="#0077cc"/>
+                <g>
+                  <rect x="29" y="17" width="2" height="8" fill="#fff"/>
+                  <rect x="29" y="35" width="2" height="8" fill="#fff"/>
+                  <rect x="17" y="29" width="8" height="2" fill="#fff"/>
+                  <rect x="35" y="29" width="8" height="2" fill="#fff"/>
+                </g>
+              </g>
+            </svg>`;
+        } else if (comp.type.includes('polia')) {
+            el.innerHTML = `
+            <svg width="60" height="60" viewBox="0 0 60 60" class="girar">
+              <circle cx="30" cy="30" r="25" fill="#e0c080" stroke="#b8860b" stroke-width="4"/>
+              <circle cx="30" cy="30" r="10" fill="#fff" stroke="#b8860b" stroke-width="2"/>
+              <circle cx="30" cy="30" r="4" fill="#b8860b"/>
+            </svg>`;
+        } else if (comp.type === 'rolamento') {
+            el.innerHTML = `
+            <svg width="60" height="60" viewBox="0 0 60 60" class="girar">
+              <circle cx="30" cy="30" r="25" fill="#eee" stroke="#999" stroke-width="4"/>
+              <circle cx="30" cy="30" r="18" fill="#ccc" stroke="#666" stroke-width="2"/>
+              <circle cx="30" cy="30" r="10" fill="#fff" stroke="#666" stroke-width="2"/>
+              <g>
+                <circle cx="30" cy="12" r="2" fill="#888"/>
+                <circle cx="45.21" cy="18.79" r="2" fill="#888"/>
+                <circle cx="48" cy="33" r="2" fill="#888"/>
+                <circle cx="41.21" cy="45.21" r="2" fill="#888"/>
+                <circle cx="30" cy="48" r="2" fill="#888"/>
+                <circle cx="18.79" cy="45.21" r="2" fill="#888"/>
+                <circle cx="12" cy="33" r="2" fill="#888"/>
+                <circle cx="14.79" cy="18.79" r="2" fill="#888"/>
+              </g>
+            </svg>`;
+        }
+
+        // Label
+        const label = document.createElement('div');
+        label.className = 'component-label';
+        label.textContent = `${comp.type.replace(/_/g, ' ')} #${comp.id.split('_')[1]}`;
+        el.appendChild(label);
+
+        workbench.appendChild(el);
+
+        el.addEventListener('click', () => {
+            if (!el.classList.contains('dragging')) openModalForComponent(comp.id);
+        });
+        el.addEventListener('mousedown', startDrag);
+        el.addEventListener('touchstart', startDrag, { passive: false });
+    });
+}
+
+// Criação de componentes
+function createComponent(type, x, y) {
+    componentCounter++;
+    const id = `comp_${componentCounter}`;
+    const defaultSize = 80;
+    const newComponent = { id, type, x, y, width: defaultSize, height: defaultSize, data: {} };
+    systemState.components.push(newComponent);
+    renderWorkbench();
+    openModalForComponent(id);
+}
+
+// Drag & drop dos componentes
+function startDrag(e) {
+    e.preventDefault();
+    activeComponent = e.currentTarget;
+    activeComponent.classList.add('dragging');
+    const rect = activeComponent.getBoundingClientRect();
+    const touch = e.type === 'touchstart' ? e.touches[0] : e;
+    offsetX = touch.clientX - rect.left;
+    offsetY = touch.clientY - rect.top;
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('touchend', endDrag);
+}
+function drag(e) {
+    const workbench = document.getElementById('main-workbench')?.querySelector('#workbench-area');
+    if (activeComponent && workbench) {
+        e.preventDefault();
+        const touch = e.type === 'touchmove' ? e.touches[0] : e;
+        const workbenchRect = workbench.getBoundingClientRect();
+        let newX = touch.clientX - workbenchRect.left - offsetX;
+        let newY = touch.clientY - workbenchRect.top - offsetY;
+        newX = Math.max(0, Math.min(newX, workbenchRect.width - activeComponent.offsetWidth));
+        newY = Math.max(0, Math.min(newY, workbenchRect.height - activeComponent.offsetHeight));
+        activeComponent.style.left = `${newX}px`;
+        activeComponent.style.top = `${newY}px`;
+    }
+}
+function endDrag() {
+    if (activeComponent) {
+        const componentState = systemState.components.find(c => c.id === activeComponent.id);
+        if (componentState) {
+            componentState.x = parseFloat(activeComponent.style.left);
+            componentState.y = parseFloat(activeComponent.style.top);
+        }
+        activeComponent.classList.remove('dragging');
+        activeComponent = null;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('touchend', endDrag);
+        requestAnimationFrame(() => renderWorkbench());
+    }
+}
+
+// Modal para editar dados dos componentes
+function openModalForComponent(id) {
+    currentEditingComponentId = id;
+    const component = systemState.components.find(c => c.id === id);
+    if (!component) return;
+    const modal = document.getElementById('component-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalFields = document.getElementById('modal-fields');
+    if (!modal || !modalTitle || !modalFields) return;
+
+    modalTitle.textContent = `Configurar ${component.type.replace(/_/g, ' ')}`;
+    let fieldsHtml = '';
+    const data = component.data;
+    switch (component.type) {
+        case 'motor':
+            fieldsHtml = `
+                <div class="input-group"><label>Potência (kW)</label><input type="number" step="any" name="power_kw" required value="${data.power_kw || ''}"></div>
+                <div class="input-group"><label>Rotação (RPM)</label><input type="number" step="any" name="rpm" required value="${data.rpm || ''}"></div>
+            `;
+            break;
+        case 'polia_motora':
+        case 'polia_movida':
+            fieldsHtml = `<div class="input-group"><label>Diâmetro (mm)</label><input type="number" name="diameter" required value="${data.diameter || ''}"></div>`;
+            break;
+        case 'rolamento':
+            fieldsHtml = `
+                <div class="input-group">
+                    <label>Modelo</label>
+                    <input type="text" name="modelo" value="${data.modelo || ''}" required>
+                </div>
+                <div class="input-group">
+                    <label>Tipo de Rolamento</label>
+                    <input type="text" name="bearing_type" value="${data.bearing_type || ''}" required>
+                </div>
+                <div class="input-group">
+                    <label>Carga Dinâmica C (N)</label>
+                    <input type="number" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}">
+                </div>
+            `;
+            break;
+    }
+    modalFields.innerHTML = fieldsHtml;
+    modal.classList.remove('hidden');
+}
+
+// Formulário do modal
+function handleModalSubmit(e) {
+    e.preventDefault();
+    const modalForm = document.getElementById('modal-form');
+    const formData = new FormData(modalForm);
+    const component = systemState.components.find(c => c.id === currentEditingComponentId);
+    if (component) {
+        for (let [key, value] of formData.entries()) {
+            component.data[key] = value;
+        }
+    }
+    document.getElementById('component-modal').classList.add('hidden');
+    renderWorkbench();
+}
+
+// Adiciona botões para criar componentes
+function setupAddComponentButtons() {
+    document.getElementById('add-motor-btn')?.addEventListener('click', () => createComponent('motor', 50, 50));
+    document.getElementById('add-polia-motora-btn')?.addEventListener('click', () => createComponent('polia_motora', 150, 50));
+    document.getElementById('add-polia-movida-btn')?.addEventListener('click', () => createComponent('polia_movida', 250, 50));
+    document.getElementById('add-rolamento-btn')?.addEventListener('click', () => createComponent('rolamento', 350, 50));
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    setupAddComponentButtons();
+    document.getElementById('modal-form')?.addEventListener('submit', handleModalSubmit);
+    renderWorkbench();
+});
+
 
 async function initializeData() {
     const welcomeMessage = document.getElementById('welcome-message');
