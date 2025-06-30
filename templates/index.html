@@ -1,71 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
-
-:root {
-    --cor-primaria: #003366; --cor-secundaria: #005a9c; --cor-destaque: #ffc107; --cor-fundo: #f0f2f5;
-    --cor-texto: #212529; --cor-sucesso: #28a745; --cor-erro: #dc3545; --cor-cinza: #6c757d;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); color: var(--cor-texto); }
-
-/* --- Estrutura Principal e Biblioteca --- */
-.platform-container { display: flex; flex-direction: column; width: 100%; min-height: 100vh; }
-#component-library { width: 100%; background: #ffffff; padding: 1.5rem; border-bottom: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-#component-library h2 { font-family: 'Oswald', sans-serif; color: var(--cor-primaria); margin-bottom: 1.5rem; text-align: center; }
-.component-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 8px; font-weight: bold; user-select: none; }
-.add-btn { background-color: var(--cor-sucesso); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.6rem; cursor: pointer; line-height: 36px; text-align: center; transition: transform 0.2s, background-color 0.2s; }
-.add-btn:hover { background-color: #218838; transform: scale(1.1); }
-
-/* --- Bancada de Trabalho --- */
-#main-workbench { width: 100%; flex-grow: 1; display: flex; flex-direction: column; padding-bottom: 80px; }
-.workbench-header { background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria)); color: #fff; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--cor-destaque); }
-.workbench-header h1 { font-family: 'Oswald', sans-serif; font-size: 1.8rem; text-align: left; flex-grow: 1;}
-.header-buttons { display: none; }
-
-/* --- Estilo Base para Botões --- */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem 1.2rem; font-size: 0.9rem; font-weight: bold; border-radius: 5px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease-in-out; }
-.btn svg { vertical-align: middle; }
-.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-.btn:active { transform: translateY(0); box-shadow: none; }
-.btn-text { display: none; } /* Esconde o texto por padrão no mobile */
-
-/* Variações de Botões */
-.btn-highlight { background-color: var(--cor-destaque); color: var(--cor-primaria); }
-.btn-highlight:hover { background-color: #ffca2c; }
-.btn-primary { background-color: #fff; color: var(--cor-primaria); }
-.btn-primary:hover { background-color: #f0f0f0; }
-.btn-secondary { color: #fff; border-color: rgba(255,255,255,0.5); }
-.btn-secondary:hover { background-color: rgba(255,255,255,0.1); }
-#generate-pdf-btn { width: 100%; margin-top: 1.5rem; background-color: var(--cor-secundaria); color: #fff; border-color: transparent;}
-#generate-pdf-btn .btn-text { display: inline; } /* Mostra o texto no botão de PDF */
-
-/* --- Barra de Ações Fixa (Mobile) --- */
-#mobile-action-bar { display: flex; justify-content: space-around; align-items: center; position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--cor-primaria); padding: 0.5rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); z-index: 50; }
-#mobile-action-bar .btn { flex-grow: 1; margin: 0 0.25rem; padding: 0.6rem; font-size: 1.2rem; }
-#mobile-action-bar .btn-secondary { color: var(--cor-cinza); background-color: #fff; border:none; }
-#mobile-action-bar .btn svg { width: 20px; height: 20px; }
-
-/* --- Resto dos Estilos --- */
-#workbench-area { width: 100%; flex-grow: 1; position: relative; overflow: auto; background-color: #fff; background-image: linear-gradient(rgba(0, 90, 156, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 90, 156, 0.1) 1px, transparent 1px); background-size: 20px 20px; min-height: 400px; }
-.placed-component { position: absolute; padding: 10px; border-radius: 8px; background-color: #fff; border: 2px solid var(--cor-secundaria); box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; display: flex; flex-direction: column; align-items: center; min-width: 120px; z-index: 10; }
-.placed-component.dragging { opacity: 0.7; z-index: 1000; transform: scale(1.05); }
-#connection-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-.belt-line { stroke: #34495e; stroke-width: 4px; stroke-linecap: round; }
-#results-panel { width: 100%; background: #ffffff; padding: 1.5rem; border-top: 1px solid #ddd; }
-#results-panel.hidden { max-height: 0; padding: 0 1.5rem; overflow: hidden; border: none; }
-.modal-backdrop { position: fixed; z-index: 100; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-.hidden { display: none !important; }
-.modal-content { background: #fff; padding: 2rem; border-radius: 8px; width: 90%; max-width: 450px; }
-#results-content table { width: 100%; margin-top: 1rem; border-collapse: collapse; font-size: 0.8rem; }
-#results-content th, #results-content td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-
-/* --- Design Responsivo para Telas Maiores --- */
-@media (min-width: 1024px) {
-    .platform-container { flex-direction: row; }
-    #component-library { width: 250px; height: 100vh; border-right: 1px solid #ddd; border-bottom: none; }
-    #main-workbench { padding-bottom: 0; }
-    .header-buttons { display: flex; gap: 1rem; }
-    .btn-text { display: inline; } /* Mostra o texto dos botões no desktop */
-    #mobile-action-bar { display: none; }
-    #results-panel { width: 350px; height: 100vh; border-left: 1px solid #ddd; border-top: none; }
-    #results-panel.hidden { width: 0; padding: 0; }
-}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Engenharia Integrada</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="platform-container">
+        <aside id="component-library">
+            <h2>Biblioteca</h2>
+            <div class="component-item"><span>Motor</span><button class="add-btn" data-type="motor" title="Adicionar Motor">+</button></div>
+            <div class="component-item"><span>Polia Motora</span><button class="add-btn" data-type="polia_motora" title="Adicionar Polia Motora">+</button></div>
+            <div class="component-item"><span>Polia Movida</span><button class="add-btn" data-type="polia_movida" title="Adicionar Polia Movida">+</button></div>
+            <div class="component-item"><span>Rolamento</span><button class="add-btn" data-type="rolamento" title="Adicionar Rolamento">+</button></div>
+        </aside>
+        <main id="main-workbench">
+            <header class="workbench-header">
+                <h1>Bancada de Trabalho Virtual</h1>
+                <div class="header-buttons">
+                    <button id="clear-button" class="btn btn-secondary" title="Limpar Bancada"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg><span class="btn-text">Limpar</span></button>
+                    <button id="optimize-button" class="btn btn-primary" title="Otimizar Sistema"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.858 2.929 2.929 0 0 1 0 5.858z"/></svg><span class="btn-text">Otimizar</span></button>
+                    <button id="analyze-button" class="btn btn-highlight" title="Analisar Sistema"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg><span class="btn-text">Analisar</span></button>
+                </div>
+            </header>
+            <div id="workbench-area"><svg id="connection-canvas"></svg></div>
+        </main>
+        <aside id="results-panel" class="hidden">
+            <h2>Análise do Sistema</h2>
+            <div id="results-content"></div>
+            <button id="generate-pdf-btn" class="btn btn-secondary hidden"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L6.354 8.146a.5.5 0 1 0-.708.708l2 2z"/></svg>Gerar Relatório PDF</button>
+        </aside>
+    </div>
+    <div id="component-modal" class="modal-backdrop hidden"><div class="modal-content"><h3 id="modal-title">Configurar Componente</h3><form id="modal-form"><div id="modal-fields"></div><button type="submit" class="btn btn-highlight">Salvar</button><button type="button" id="modal-close-btn" class="btn btn-secondary">Cancelar</button></form></div></div>
+    <div id="optimize-modal" class="modal-backdrop hidden"><div class="modal-content"><h3>Otimizar Sistema</h3><p>Selecione seu objetivo. O software testará combinações para encontrar a melhor solução. (Requer no mínimo 1 motor, 2 polias e 2 rolamentos na bancada).</p><form id="optimize-form"><div class="input-group"><label for="optimization-goal">Meu objetivo é:</label><select id="optimization-goal" name="goal"><option value="cost">Minimizar Custo Operacional Anual</option><option value="life">Maximizar Vida Útil do Sistema</option><option value="efficiency">Maximizar Eficiência da Transmissão</option></select></div><button type="submit" class="btn btn-highlight">Encontrar Soluções</button><button type="button" id="optimize-modal-close-btn" class="btn btn-secondary">Cancelar</button></form></div></div>
+    <div id="mobile-action-bar"><button id="clear-button" class="btn btn-secondary" title="Limpar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg></button><button id="optimize-button" class="btn btn-primary" title="Otimizar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c-1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.858 2.929 2.929 0 0 1 0 5.858z"/></svg></button><button id="analyze-button" class="btn btn-highlight" title="Analisar"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg></button></div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
