@@ -1109,31 +1109,367 @@ aside#results-panel {
     #workbench-area {
         flex-grow: 1;
         min-height: 40vh;
-        overflow: hidden;
-    }
+/* --- TEMA E VARIÁVEIS GLOBAIS --- */
+:root {
+    --cor-primaria: #0a3d62;
+    --cor-secundaria: #3c6382;
+    --cor-destaque: #079992;
+    --cor-fundo: #f0f3f5;
+    --cor-fundo-componente: #ffffff;
+    --cor-texto: #333333;
+    --cor-texto-claro: #ffffff;
+    --cor-sombra: rgba(0, 0, 0, 0.1);
+    --cor-erro: #c23616;
+    --raio-borda: 8px;
+}
 
+/* --- ESTILOS GERAIS E RESET --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+    line-height: 1.6;
+}
+
+/* --- LAYOUT DA PLATAFORMA --- */
+.platform-container {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    height: 100vh;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+aside {
+    background-color: var(--cor-fundo-componente);
+    border-radius: var(--raio-borda);
+    box-shadow: 0 2px 5px var(--cor-sombra);
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+main {
+    background-color: var(--cor-fundo-componente);
+    border-radius: var(--raio-borda);
+    box-shadow: 0 2px 5px var(--cor-sombra);
+    position: relative;
+    overflow: hidden;
+}
+
+#main-workbench {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#workbench-area {
+    flex-grow: 1;
+    position: relative;
+}
+
+#connection-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.belt-line {
+    stroke: #555;
+    stroke-width: 4px;
+    stroke-dasharray: 10, 5;
+}
+
+/* --- PAINEL LATERAL (BIBLIOTECA E PROJETOS) --- */
+#component-library h3, #projects-panel h3 {
+    color: var(--cor-primaria);
+    border-bottom: 2px solid var(--cor-destaque);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.user-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--cor-fundo);
+    border-radius: var(--raio-borda);
+}
+
+#welcome-message {
+    font-weight: bold;
+    color: var(--cor-primaria);
+}
+
+.btn-logout {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cor-erro);
+    padding: 0.5rem;
+    transition: color 0.2s;
+}
+.btn-logout:hover {
+    color: #a71d2a;
+}
+
+#projects-panel {
+    margin-bottom: 2rem;
+}
+
+#project-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#project-list li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+#project-list li:hover, #project-list li.active {
+    background-color: var(--cor-secundaria);
+    color: var(--cor-texto-claro);
+}
+
+#project-list li:last-child {
+    border-bottom: none;
+}
+
+.component-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.add-btn {
+    background-color: var(--cor-destaque);
+    color: var(--cor-texto-claro);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.add-btn:hover {
+    background-color: #056e68;
+}
+
+/* --- COMPONENTES NA BANCADA --- */
+.placed-component {
+    position: absolute;
+    z-index: 10;
+    cursor: grab;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-size: cover;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    border: 3px solid var(--cor-secundaria);
+}
+.placed-component.dragging {
+    cursor: grabbing;
+    z-index: 100;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.motor { background-color: #d63031; width: 80px; height: 80px; }
+.polia_motora, .polia_movida { background-color: #6c5ce7; width: 100px; height: 100px; }
+.rolamento { background-color: #0984e3; width: 60px; height: 60px; }
+
+.component-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+/* --- PAINEL DE RESULTADOS --- */
+#results-panel {
+    display: flex;
+    flex-direction: column;
+}
+#results-panel.hidden { display: none; }
+#results-content { flex-grow: 1; }
+
+#results-content h3 {
+    color: var(--cor-primaria);
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+#results-content ul {
+    list-style: none;
+    padding-left: 0;
+}
+#results-content li {
+    background-color: var(--cor-fundo);
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.25rem;
+}
+.weakest-link {
+    color: var(--cor-erro) !important;
+    text-align: center;
+    margin-top: 1.5rem;
+    font-style: italic;
+}
+.loading-message {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+    color: var(--cor-secundaria);
+}
+
+/* --- MODAIS --- */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-backdrop.hidden { display: none; }
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: var(--raio-borda);
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: var(--cor-primaria);
+}
+
+.input-group {
+    margin-bottom: 1rem;
+}
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+.input-group input, .input-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.input-group.radio-group {
+    display: flex;
+    align-items: center;
+}
+.input-group.radio-group input {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+/* --- BOTÕES --- */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.9; }
+
+.btn-primary { background-color: var(--cor-primaria); color: var(--cor-texto-claro); }
+.btn-secondary { background-color: #ccc; color: var(--cor-texto); }
+.btn-highlight { background-color: var(--cor-destaque); color: var(--cor-texto-claro); }
+.btn-danger { background-color: var(--cor-erro); color: var(--cor-texto-claro); }
+
+#modal-form button, #save-project-form button, #optimize-form button {
+    margin-right: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* --- BARRA DE AÇÕES INFERIOR --- */
+#mobile-action-bar {
+    display: none; /* Escondido em desktop */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--cor-primaria);
+    padding: 0.5rem;
+    box-shadow: 0 -2px 5px var(--cor-sombra);
+    z-index: 500;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 900px) {
+    .platform-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        padding-bottom: 80px; /* Espaço para a barra de ações */
+    }
+    aside {
+        display: none;
+    }
     aside#results-panel {
-        display: none;
+        display: block;
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 80%;
+        max-width: 350px;
+        height: 100%;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+        z-index: 600;
     }
-
-    #desktop-action-bar {
-        display: none;
+    aside#results-panel:not(.hidden) {
+        transform: translateX(0);
     }
-
+    main {
+        height: calc(100vh - 80px); /* Ajusta altura para preencher a tela */
+    }
     #mobile-action-bar {
         display: flex;
-        height: 80px;
-    }
-
-    #mobile-action-bar .btn {
-        width: 70px;
-        height: 70px;
-        font-size: 1.8rem;
-    }
-
-    #mobile-action-bar .btn svg {
-        width: 28px;
-        height: 28px;
     }
 }
 
