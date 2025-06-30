@@ -440,19 +440,22 @@ function openModalForComponent(id) {
             }
             break;
         case 'rolamento':
-            let options = (componentDatabase.rolamentos || []).map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('');
-            fieldsHtml = `
-                <div class="input-group">
-                    <label>Selecione o Modelo</label>
-                    <select id="rolamento-modelo-select" name="modelo">
-                        <option value="">-- Escolha um modelo --</option>
-                        ${options}
-                    </select>
-                </div>
-                <div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" value="${data.bearing_type || ''}"></div>
-                <div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}"></div>
-            `;
-            break;
+    fieldsHtml = `
+        <div class="input-group">
+            <label>Modelo</label>
+            <input type="text" name="modelo" value="${data.modelo || ''}" required>
+        </div>
+        <div class="input-group">
+            <label>Tipo de Rolamento</label>
+            <input type="text" name="bearing_type" value="${data.bearing_type || ''}" required>
+        </div>
+        <div class="input-group">
+            <label>Carga Dinâmica C (N)</label>
+            <input type="number" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}">
+        </div>
+    `;
+    break;
+
     }
     modalFields.innerHTML = fieldsHtml;
 
