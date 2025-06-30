@@ -24,23 +24,69 @@ body {
     line-height: 1.6;
 }
 
+/* --- LAYOUT PADRÃO (DESKTOP) --- */
 .platform-container {
     display: flex;
     height: 100vh;
     overflow: hidden;
 }
 
-/* --- ASIDE: BIBLIOTECA E PAINEL DE RESULTADOS --- */
-aside {
+aside#component-library { /* Sidebar Esquerda: Projetos e Biblioteca */
     padding: 1.5rem;
     background-color: #fff;
     border-right: 1px solid var(--cor-borda);
     overflow-y: auto;
-    width: 300px;
-    flex-shrink: 0;
+    width: 300px; /* Largura fixa para desktop */
+    flex-shrink: 0; /* Impede que encolha */
     transition: width 0.3s ease-in-out;
 }
 
+#main-workbench { /* Área Principal: Cabeçalho e Bancada */
+    flex-grow: 1; /* Ocupa o espaço restante */
+    display: flex; /* Para empilhar cabeçalho e bancada verticalmente */
+    flex-direction: column;
+    overflow: hidden; /* Garante que o conteúdo não transborde */
+}
+
+.workbench-header { /* O cabeçalho real da bancada */
+    background-color: var(--cor-primaria);
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+    flex-shrink: 0; /* Impede que o cabeçalho encolha */
+}
+
+#workbench-area { /* A área de trabalho dos componentes */
+    flex-grow: 1; /* Ocupa o espaço restante dentro do #main-workbench */
+    background-color: #fff;
+    position: relative; /* Importante para o posicionamento de componentes */
+    overflow: hidden;
+    background-image: 
+        linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+aside#results-panel { /* Painel de Resultados Direito */
+    width: 350px;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-left: 1px solid var(--cor-borda);
+    box-shadow: -4px 0 6px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#mobile-action-bar { /* Barra de Ação Móvel (escondida por padrão no desktop) */
+    display: none;
+}
+
+/* --- ESTILOS DE COMPONENTES E MODAIS (inalterados) --- */
 aside h2, aside h3 {
     color: var(--cor-primaria);
     margin-bottom: 1rem;
@@ -79,33 +125,6 @@ aside h2, aside h3 {
     background-color: #2980b9;
 }
 
-/* --- MAIN: CABEÇALHO E ÁREA DA BANCADA (AGORA SÃO IRMÃOS) --- */
-#workbench-header-container { /* Novo container para o cabeçalho */
-    flex-shrink: 0; /* Impede que o cabeçalho encolha */
-    background-color: var(--cor-primaria);
-    color: white;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    z-index: 10;
-}
-
-.workbench-header { /* O cabeçalho real */
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#workbench-area { /* A área de trabalho dos componentes */
-    flex-grow: 1; /* Permite que ocupe o espaço restante */
-    background-color: #fff;
-    position: relative;
-    overflow: hidden;
-    background-image: 
-        linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
-}
-
 .placed-component {
     position: absolute;
     width: 80px;
@@ -142,7 +161,6 @@ aside h2, aside h3 {
     width: max-content;
 }
 
-/* Tipos específicos de componentes */
 .polia_motora, .polia_movida {
     border-radius: 50%;
     background-color: #2980b9;
@@ -158,17 +176,6 @@ aside h2, aside h3 {
     height: 40px;
 }
 
-/* --- ASIDE: PAINEL DE RESULTADOS --- */
-#results-panel {
-    width: 350px;
-    background-color: #fff;
-    padding: 1.5rem;
-    border-left: 1px solid var(--cor-borda);
-    box-shadow: -4px 0 6px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
 #results-panel h2 {
     margin-bottom: 1.5rem;
 }
@@ -208,7 +215,6 @@ aside h2, aside h3 {
     z-index: 1000;
 }
 
-/* --- ESTILOS DO MODAL --- */
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -254,6 +260,10 @@ aside h2, aside h3 {
     border-radius: 5px;
     font-size: 1rem;
     transition: border-color 0.2s;
+    /* Adicionado */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 .modal-content form input:focus,
 .modal-content form select:focus {
@@ -283,30 +293,28 @@ aside h2, aside h3 {
     transform: translateY(-2px);
 }
 
-/* --- Estilos para a Visualização de Conexões --- */
 #connection-canvas {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 0; /* Fica atrás dos componentes */
-    pointer-events: none; /* Permite clicar através do canvas */
+    z-index: 0;
+    pointer-events: none;
 }
 
 .belt-line {
-    stroke: #34495e; /* Cor da correia */
-    stroke-width: 4px; /* Largura da correia */
+    stroke: #34495e;
+    stroke-width: 4px;
     stroke-linecap: round;
 }
 
 .shaft-line {
-    stroke: #7f8c8d; /* Cor do eixo */
-    stroke-width: 6px; /* Largura do eixo */
-    stroke-dasharray: 10 5; /* Linha tracejada para o eixo */
+    stroke: #7f8c8d;
+    stroke-width: 6px;
+    stroke-dasharray: 10 5;
 }
 
-/* --- Estilos para o Botão de Gerar PDF --- */
 #generate-pdf-btn {
     width: 100%;
     padding: 0.8rem;
@@ -326,7 +334,6 @@ aside h2, aside h3 {
     transform: translateY(-2px);
 }
 
-/* --- PAINEL DO USUÁRIO E PROJETOS --- */
 .user-panel {
     display: flex;
     justify-content: space-between;
@@ -381,7 +388,6 @@ aside h2, aside h3 {
     border-bottom: none;
 }
 
-/* --- ESTILOS PARA PÁGINAS DE AUTENTICAÇÃO --- */
 .auth-body {
     display: flex;
     justify-content: center;
@@ -428,36 +434,8 @@ aside h2, aside h3 {
     border: 1px solid #f5c6cb;
 }
 
-/* --- BARRA DE AÇÃO MOBILE --- */
 #mobile-action-bar {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 60px;
-    background-color: var(--cor-primaria);
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    z-index: 500;
-}
-#mobile-action-bar .btn {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    background-color: var(--cor-secundaria);
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-#mobile-action-bar .btn:hover {
-    transform: scale(1.1);
+    display: none; /* Escondido por padrão no desktop */
 }
 .btn-action {
     background-color: #fff !important;
@@ -471,7 +449,7 @@ aside h2, aside h3 {
     margin: 0 5px;
 }
 
-/* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (com nova estrutura) --- */
+/* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS --- */
 @media (max-width: 768px) {
     .platform-container {
         flex-direction: column; /* Empilha os elementos verticalmente */
@@ -479,30 +457,32 @@ aside h2, aside h3 {
         min-height: 100vh; /* Garante que ocupe a altura total da tela */
     }
 
-    /* Nova ordem dos elementos na tela mobile */
-    #workbench-header-container { /* O cabeçalho vem primeiro */
-        order: 1;
-        width: 100%; /* Ocupa toda a largura */
-    }
-
-    aside#component-library { /* A barra lateral (projetos/biblioteca) vem em segundo */
-        order: 2;
+    aside#component-library { /* A barra lateral (projetos/biblioteca) */
         width: 100%; /* Ocupa toda a largura */
         border-right: none; /* Remove borda lateral */
         border-bottom: 1px solid var(--cor-borda); /* Adiciona borda inferior */
+        order: 2; /* Aparece em segundo (após o cabeçalho) */
         padding-bottom: 70px; /* Espaço para a barra de ação fixa no rodapé */
     }
 
-    #workbench-area { /* A área de trabalho vem por último */
-        order: 3;
-        flex-grow: 1; /* Permite que a área cresça e ocupe o espaço restante */
+    #main-workbench { /* A área principal da bancada (cabeçalho + bancada) */
         width: 100%; /* Ocupa toda a largura */
-        min-height: 40vh; /* Altura mínima para ser visível */
-        overflow: hidden; /* Garante que o conteúdo não transborde */
-        position: relative; /* Essencial para o posicionamento dos componentes */
+        order: 1; /* Aparece primeiro */
+        flex-grow: 1; /* Permite que cresça e ocupe espaço disponível */
     }
     
-    #results-panel { /* O painel de resultados da direita */
+    #main-workbench header.workbench-header {
+        /* O cabeçalho fica no topo do main-workbench */
+        width: 100%;
+    }
+
+    #workbench-area { /* A área de trabalho dos componentes (dentro do main-workbench) */
+        flex-grow: 1; /* Permite que ocupe o espaço restante dentro do main-workbench */
+        min-height: 40vh; /* Altura mínima para ser visível */
+        overflow: hidden; /* Garante que o conteúdo não transborde */
+    }
+
+    aside#results-panel { /* O painel de resultados da direita */
         display: none; /* Esconde o painel de resultados em telas pequenas */
     }
 
