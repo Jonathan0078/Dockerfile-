@@ -449,6 +449,7 @@ aside h2, aside h3 {
     margin: 0 5px;
 }
 
+
 /* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS --- */
 @media (max-width: 768px) {
     .platform-container {
@@ -488,5 +489,16 @@ aside h2, aside h3 {
 
     #mobile-action-bar {
         display: flex; /* Garante que a barra de ação móvel esteja visível */
+        /* Aumentando o tamanho dos botões na barra de ação móvel */
+        height: 80px; /* Aumenta a altura da barra */
+    }
+    #mobile-action-bar .btn {
+        width: 70px; /* Torna os botões maiores */
+        height: 70px; /* Torna os botões maiores */
+    }
+    /* Opcional: ajustar tamanho do ícone SVG dentro dos botões */
+    #mobile-action-bar .btn svg {
+        width: 28px; /* Aumenta o ícone SVG */
+        height: 28px; /* Aumenta o ícone SVG */
     }
 }
