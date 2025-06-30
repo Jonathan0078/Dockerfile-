@@ -474,3 +474,46 @@ aside h2, aside h3 {
     color: white !important;
     margin: 0 5px;
 }
+
+/* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS --- */
+@media (max-width: 768px) {
+    .platform-container {
+        flex-direction: column; /* Empilha os elementos verticalmente */
+        height: auto; /* Permite que o conteúdo determine a altura */
+        min-height: 100vh; /* Garante que ocupe a altura total da tela */
+    }
+
+    aside#component-library { /* O painel lateral esquerdo */
+        width: 100%; /* Ocupa toda a largura */
+        border-right: none; /* Remove a borda lateral */
+        border-bottom: 1px solid var(--cor-borda); /* Adiciona uma borda na parte inferior */
+        order: 2; /* Aparece depois do conteúdo principal da bancada */
+        padding-bottom: 70px; /* Garante espaço para a barra de ação fixa no rodapé */
+    }
+
+    #main-workbench { /* A área principal da bancada */
+        width: 100%; /* Ocupa toda a largura */
+        order: 1; /* Aparece primeiro */
+        flex-grow: 1; /* Permite que cresça e ocupe espaço disponível */
+    }
+    
+    .workbench-header {
+        /* Já está dentro de #main-workbench, então aparece naturalmente primeiro */
+        flex-shrink: 0; /* Impede que o cabeçalho encolha */
+    }
+
+    #workbench-area {
+        /* Fica dentro de #main-workbench, logo abaixo do cabeçalho */
+        flex-grow: 1; /* Permite que a área de itens cresça */
+        min-height: 40vh; /* Garante uma altura mínima visível para a bancada */
+        overflow: hidden; /* Evita rolagem interna desnecessária se não for principal */
+    }
+
+    #results-panel { /* O painel de resultados da direita */
+        display: none; /* Esconde o painel de resultados em telas pequenas (foco na área de trabalho) */
+    }
+
+    #mobile-action-bar {
+        display: flex; /* Garante que a barra de ação móvel esteja visível */
+    }
+}
