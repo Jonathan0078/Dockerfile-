@@ -22,6 +22,28 @@
                 <ul id="project-list">
                     </ul>
             </div>
+            <div id="optimize-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3>Otimizar Sistema</h3>
+            <form id="optimize-form">
+                <p>Selecione um objetivo para otimizar o seu sistema:</p>
+                <div class="input-group">
+                    <input type="radio" id="goal-cost" name="optimization_goal" value="cost" checked>
+                    <label for="goal-cost">Minimizar Custo Operacional</label>
+                </div>
+                <div class="input-group">
+                    <input type="radio" id="goal-life" name="optimization_goal" value="life">
+                    <label for="goal-life">Maximizar Vida Útil (L10h)</label>
+                </div>
+                <div class="input-group">
+                    <input type="radio" id="goal-efficiency" name="optimization_goal" value="efficiency">
+                    <label for="goal-efficiency">Maximizar Eficiência</label>
+                </div>
+                <button type="submit" class="btn btn-highlight">Otimizar</button>
+                <button type="button" id="optimize-modal-close-btn" class="btn btn-secondary">Cancelar</button>
+            </form>
+        </div>
+    </div>
             <div id="library-panel">
                 <h3>Biblioteca</h3>
                 <div class="component-item"><span>Motor</span><button class="add-btn" data-type="motor">+</button></div>
