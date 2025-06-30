@@ -867,7 +867,23 @@ function openModalForComponent(id) {
                 `;
             }
             break;
-        case 'rolamento':
+        
+
+    }
+    modalFields.innerHTML = fieldsHtml;
+
+    const modeloSelect = document.getElementById('rolamento-modelo-select');
+    if (modeloSelect) {
+        modeloSelect.addEventListener('change', e => {
+            const selectedModelo = e.target.value;
+            const rolamentoData = (componentDatabase.rolamentos || []).find(r => r.modelo === selectedModelo);
+            if (rolamentoData) {
+                document.getElementById('rolamento-tipo-input').value = rolamentoData.tipo;
+                document.getElementById('rolamento-carga-c-input').value = rolamentoData.carga_c;
+            } else {
+                document.getElementById('rolamento-tipo-input').value = '';
+                document.getElementById('rolamento-carga-c-input').value = '';
+            }case 'rolamento':
     fieldsHtml = `
         <div class="input-group">
             <label>Modelo</label>
@@ -884,21 +900,6 @@ function openModalForComponent(id) {
     `;
     break;
 
-    }
-    modalFields.innerHTML = fieldsHtml;
-
-    const modeloSelect = document.getElementById('rolamento-modelo-select');
-    if (modeloSelect) {
-        modeloSelect.addEventListener('change', e => {
-            const selectedModelo = e.target.value;
-            const rolamentoData = (componentDatabase.rolamentos || []).find(r => r.modelo === selectedModelo);
-            if (rolamentoData) {
-                document.getElementById('rolamento-tipo-input').value = rolamentoData.tipo;
-                document.getElementById('rolamento-carga-c-input').value = rolamentoData.carga_c;
-            } else {
-                document.getElementById('rolamento-tipo-input').value = '';
-                document.getElementById('rolamento-carga-c-input').value = '';
-            }
         });
     }
     modal.classList.remove('hidden');
