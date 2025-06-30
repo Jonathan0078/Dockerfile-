@@ -3,11 +3,11 @@ import json
 import itertools
 from flask import Flask, jsonify, render_template, request
 
-# Esta linha configura o Flask para usar as pastas 'templates' e 'static' por padrão
+# Configuração padrão e robusta do Flask
 app = Flask(__name__)
 
+# A classe AnalisadorDeSistema não precisa de alterações
 class AnalisadorDeSistema:
-    # --- A CLASSE COMPLETA ---
     def __init__(self, sistema_json): self.componentes = sistema_json['components']; self.resultados = {}
     def analisar(self):
         motor = self._find_component_by_type('motor'); polia_motora = self._find_component_by_type('polia_motora'); polia_movida = self._find_component_by_type('polia_movida'); rolamentos = self._find_components_by_type('rolamento')
@@ -20,23 +20,21 @@ class AnalisadorDeSistema:
             carga_radial_por_rolamento = tensao_total_na_correia / len(rolamentos) if rolamentos else 0
             for rolamento in rolamentos: self.resultados[rolamento['id']] = {'tipo': 'Rolamento', 'vida_util_l10h': round(self._calcular_vida_l10h(rolamento, carga_radial_por_rolamento, rpm_movida))}
         self.resultados['sistema'] = { 'relacao_transmissao': round(relacao_transmissao, 2), 'rpm_final': round(rpm_movida, 2) }; return self.resultados
-    def _calcular_vida_l10h(self, rolamento, carga_radial, rpm):
-        try: C = float(rolamento['data']['dynamic_load_c']); P = carga_radial; p = 3 if rolamento['data']['bearing_type'] == 'esferas' else 10/3;
-        except (KeyError, ValueError, ZeroDivisionError): return 0
+    def _calcular_vida_l10h(self, r, cr, rpm):
+        try: C = float(r['data']['dynamic_load_c']); P = cr; p = 3 if r['data']['bearing_type'] == 'esferas' else 10/3
+        except: return 0
         if P <= 0: return float('inf')
         return (10**6 / (60 * rpm)) * ((C / P)**p) if rpm > 0 else float('inf')
-    def _find_component_by_type(self, tipo):
-        for comp in self.componentes:
-            if comp['type'] == tipo: return comp
+    def _find_component_by_type(self, t):
+        for c in self.componentes:
+            if c['type'] == t: return c
         return None
-    def _find_components_by_type(self, tipo): return [comp for comp in self.componentes if comp['type'] == tipo]
+    def _find_components_by_type(self, t): return [c for c in self.componentes if c['type'] == t]
 
-# Rota principal que renderiza o HTML da pasta /templates
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Rotas da API que respondem ao JavaScript
 @app.route('/get_component_database')
 def get_database():
     try:
@@ -47,30 +45,30 @@ def get_database():
 @app.route('/analyze_system', methods=['POST'])
 def analyze_system_route():
     try:
-        analisador = AnalisadorDeSistema(request.get_json())
-        return jsonify(analisador.analisar())
+        return jsonify(AnalisadorDeSistema(request.get_json()).analisar())
     except Exception as e: return jsonify({"error": str(e)}), 400
 
+# Rota de Otimização - simplificada para evitar sobrecarga no Render
 @app.route('/optimize_system', methods=['POST'])
 def optimize_system_route():
     try:
         data = request.get_json(); base_system = data['system']; goal = data['goal']
         with open('database.json', 'r', encoding='utf-8') as f: db = json.load(f)
-        possible_pulleys = db['polias']['diametros_comerciais_mm']; possible_bearings = db['rolamentos']; solutions = []
-        pulley_combinations = list(itertools.product(possible_pulleys, repeat=2)); bearing_combinations = list(itertools.product(possible_bearings, repeat=2))
-        total_combinations = list(itertools.product(pulley_combinations, bearing_combinations))
-        for p_combo, b_combo in total_combinations[:2000]: # Limite de iterações
-            current_system = json.loads(json.dumps(base_system))
-            if len(current_system['components']) >= 5:
-                current_system['components'][1]['data']['diameter'] = p_combo[0]; current_system['components'][2]['data']['diameter'] = p_combo[1]
-                current_system['components'][3]['data'] = {'modelo': b_combo[0]['modelo'], 'bearing_type': b_combo[0]['tipo'], 'dynamic_load_c': b_combo[0]['carga_c']}
-                current_system['components'][4]['data'] = {'modelo': b_combo[1]['modelo'], 'bearing_type': b_combo[1]['tipo'], 'dynamic_load_c': b_combo[1]['carga_c']}
+        p_opts = db['polias']['diametros_comerciais_mm']; b_opts = db['rolamentos']; solutions = []
+        p_combos = list(itertools.product(p_opts, repeat=2)); b_combos = list(itertools.product(b_opts, repeat=2))
+        total_combos = list(itertools.product(p_combos, b_combos))
+        for p_combo, b_combo in total_combos[:1500]: # Limite de segurança
+            cs = json.loads(json.dumps(base_system))
+            if len(cs['components']) >= 5:
+                cs['components'][1]['data']['diameter'] = p_combo[0]; cs['components'][2]['data']['diameter'] = p_combo[1]
+                cs['components'][3]['data'] = {'modelo': b_combo[0]['modelo'], 'bearing_type': b_combo[0]['tipo'], 'dynamic_load_c': b_combo[0]['carga_c']}
+                cs['components'][4]['data'] = {'modelo': b_combo[1]['modelo'], 'bearing_type': b_combo[1]['tipo'], 'dynamic_load_c': b_combo[1]['carga_c']}
             else: continue
-            analisador = AnalisadorDeSistema(current_system); results = analisador.analisar()
-            cost = results.get('financeiro_energetico', {}).get('custo_operacional_anual_brl', 0)
-            efficiency = float(results.get('financeiro_energetico', {}).get('eficiencia_transmissao', '0%').replace('%',''))
-            lifespans = [v['vida_util_l10h'] for k,v in results.items() if k.startswith('comp_')]; min_life = min(lifespans) if lifespans else 0
-            solutions.append({ "config": f"Polias {p_combo[0]}/{p_combo[1]} | Rolamentos {b_combo[0]['modelo']}/{b_combo[1]['modelo']}", "cost": cost, "efficiency": efficiency, "min_life": min_life })
+            r = AnalisadorDeSistema(cs).analisar()
+            cost = r.get('financeiro_energetico', {}).get('custo_operacional_anual_brl', 0)
+            eff = float(r.get('financeiro_energetico', {}).get('eficiencia_transmissao', '0%').replace('%',''))
+            lifespans = [v['vida_util_l10h'] for k,v in r.items() if k.startswith('comp_')]; min_life = min(lifespans) if lifespans else 0
+            solutions.append({"config": f"P:{p_combo[0]}/{p_combo[1]} R:{b_combo[0]['modelo']}/{b_combo[1]['modelo']}", "cost": cost, "efficiency": eff, "min_life": min_life})
         if goal == 'cost': solutions.sort(key=lambda x: x['cost'])
         elif goal == 'life': solutions.sort(key=lambda x: x['min_life'], reverse=True)
         elif goal == 'efficiency': solutions.sort(key=lambda x: x['efficiency'], reverse=True)
@@ -79,4 +77,3 @@ def optimize_system_route():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
