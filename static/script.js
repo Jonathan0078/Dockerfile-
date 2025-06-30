@@ -217,7 +217,7 @@ function displayResults(results) {
     let html = '';
     if (results.financeiro_energetico) {
         const fin = results.financeiro_energetico;
-        html += `<h3>Análise Financeira e Energética</h3><ul><li>Eficiência da Transmissão: <strong>${fin.eficiencia_transmissao}</strong></li><li>Potência Perdida: <strong>${fin.potencia_perdida_watts} Watts</strong></li><li>Consumo Anual: <strong>${fin.consumo_anual_kwh.toLocaleString('pt-BR')} kWh</strong></li><li>Custo Anual (R$): <strong>${fin.custo_operacional_anual_brl.toLocaleString('pt-BR')}</strong></li></ul>`;
+        html += `<h3>Análise Financeira e Energética</h3><ul><li>Eficiência da Transmissão: <strong>${fin.eficiencia_transmissao}</strong></li><li>Potência Perdida: <strong>${fin.potencia_perdida}</strong></li></ul>`;
     }
     html += '<h3>Resultados Técnicos</h3><ul>';
     for (const [key, value] of Object.entries(results.sistema)) {
@@ -360,7 +360,6 @@ async function handleAnalyzeClick() {
 }
 
 // --- CÓDIGO DA BANCADA DE TRABALHO (FUNÇÕES AUXILIARES) ---
-// Estas funções auxiliares da bancada devem ser acessíveis globalmente
 function createComponent(type, x, y) {
     componentCounter++;
     const id = `comp_${componentCounter}`;
@@ -460,18 +459,18 @@ function openModalForComponent(id) {
     const data = component.data;
     switch (component.type) {
         case 'motor':
-            fieldsHtml = `<div class="input-group"><label>Potência (kW)</label><input type="number" step="any" name="power_kw" required value="${data.power_kw || ''}"></div><div class="input-group"><label>Rotação (RPM)</label><input type="number" step="any" name="rpm" required value="${data.rpm || ''}"></div><hr><div class="input-group"><label>Eficiência do Motor (%)</label><input type="number" step="any" name="efficiency" value="${data.efficiency || '95'}"></div><div class="input-group"><label>Custo Energia (R$/kWh)</label><input type="number" step="any" name="cost_per_kwh" value="${data.cost_per_kwh || '0.75'}"></div><div class="input-group"><label>Horas de Operação/Dia</label><input type="number" step="any" name="operating_hours" value="${data.operating_hours || '8'}"></div>`;
+            fieldsHtml = `<div class="input-group"><label>Potência (kW)</label><input type="number" step="any" name="power_kw" required value="${data.power_kw || ''}"></div><div class="input-group"><label>Rotação (rpm)</label><input type="number" step="any" name="rpm" required value="${data.rpm || ''}"></div>`;
             break;
         case 'polia_motora':
         case 'polia_movida':
             fieldsHtml = `<div class="input-group"><label>Diâmetro (mm)</label><input type="number" name="diameter" required value="${data.diameter || ''}"></div>`;
             if (component.type === 'polia_motora') {
-                fieldsHtml += `<div class="input-group"><label>Tipo de Correia</label><select name="belt_type"><option value="V" ${data.belt_type === 'V' ? 'selected' : ''}>Em V</option><option value="sincronizadora" ${data.belt_type === 'sincronizadora' ? 'selected' : ''}>Sincronizadora</option><option value="plana" ${data.belt_type === 'plana' ? 'selected' : ''}>Plana</option></select></div>`;
+                fieldsHtml += `<div class="input-group"><label>Tipo de Correia</label><select name="belt_type"><option value="V" ${data.belt_type === 'V' ? 'selected' : ''}>Em V</option><option value="flat" ${data.belt_type === 'flat' ? 'selected' : ''}>Plana</option></select></div>`;
             }
             break;
         case 'rolamento':
             let options = (componentDatabase.rolamentos || []).map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('');
-            fieldsHtml = `<div class="input-group"><label>Selecione o Modelo</label><select id="rolamento-modelo-select" name="modelo"><option value="">-- Escolha um modelo --</option>${options}</select></div><div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" value="${data.bearing_type || ''}"></div><div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}"></div>`;
+            fieldsHtml = `<div class="input-group"><label>Selecione o Modelo</label><select id="rolamento-modelo-select" name="modelo"><option value="">-- Escolha um modelo --</option>${options}</select></div><div class="input-group"><label>Tipo</label><input type="text" id="rolamento-tipo-input" name="tipo" readonly value="${data.tipo || ''}"></div><div class="input-group"><label>Carga C</label><input type="number" id="rolamento-carga-c-input" name="carga_c" readonly value="${data.carga_c || ''}"></div>`;
             break;
     }
     modalFields.innerHTML = fieldsHtml;
@@ -602,5 +601,58 @@ function drawConnections() {
     }
 }
 
-// Fim do DOMContentLoaded async function() {} block
+// Bloco de inicialização dos botões e eventos
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicialização dos dados
+  initializeData();
+
+  // Botões Desktop
+  document.getElementById('desktop-save-btn')?.addEventListener('click', () => {
+    document.getElementById('save-project-modal').classList.remove('hidden');
+  });
+  document.getElementById('desktop-clear-btn')?.addEventListener('click', clearWorkbench);
+  document.getElementById('desktop-settings-btn')?.addEventListener('click', () => {
+    document.getElementById('optimize-modal').classList.remove('hidden');
+  });
+  document.getElementById('desktop-analyze-btn')?.addEventListener('click', handleAnalyzeClick);
+
+  // Botões do modal de salvar projeto
+  document.getElementById('save-project-form')?.addEventListener('submit', handleSaveProject);
+  document.getElementById('save-modal-close-btn')?.addEventListener('click', () => {
+    document.getElementById('save-project-modal').classList.add('hidden');
+  });
+
+  // Botões do modal de otimização
+  document.getElementById('optimize-form')?.addEventListener('submit', handleOptimizeSubmit);
+  document.getElementById('optimize-modal-close-btn')?.addEventListener('click', () => {
+    document.getElementById('optimize-modal').classList.add('hidden');
+  });
+
+  // Botão do modal do componente
+  document.getElementById('modal-form')?.addEventListener('submit', handleModalSubmit);
+  document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+    document.getElementById('component-modal').classList.add('hidden');
+  });
+
+  // Botão gerar PDF
+  document.getElementById('generate-pdf-btn')?.addEventListener('click', generatePDF);
+
+  // Botões Mobile
+  document.getElementById('save-button')?.addEventListener('click', () => {
+    document.getElementById('save-project-modal').classList.remove('hidden');
+  });
+  document.getElementById('clear-button')?.addEventListener('click', clearWorkbench);
+  document.getElementById('settings-button')?.addEventListener('click', () => {
+    document.getElementById('optimize-modal').classList.remove('hidden');
+  });
+  document.getElementById('analyze-button-mobile')?.addEventListener('click', handleAnalyzeClick);
+
+  // Botão adicionar componente (botões + da biblioteca)
+  document.querySelectorAll('.add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const type = e.target.dataset.type;
+      // Adiciona componente no centro da bancada (ajuste para sua preferência de posição)
+      createComponent(type, 300, 150);
+    });
+  });
 });
