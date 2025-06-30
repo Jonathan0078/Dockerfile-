@@ -60,6 +60,31 @@ aside#component-library { /* Sidebar Esquerda: Projetos e Biblioteca */
     flex-shrink: 0; /* Impede que o cabeçalho encolha */
 }
 
+/* ESTILOS DA NOVA BARRA DE AÇÕES PARA DESKTOP */
+#desktop-action-bar {
+    display: flex; /* Visível por padrão no desktop */
+    justify-content: flex-end; /* Alinha os botões à direita */
+    padding: 0.5rem 1rem;
+    background-color: #f2f2f2;
+    border-bottom: 1px solid var(--cor-borda);
+    gap: 10px; /* Espaço entre os botões */
+    flex-shrink: 0;
+}
+#desktop-action-bar .btn-action,
+#desktop-action-bar .btn-action-highlight {
+    padding: 0.6rem 1.2rem; /* Tamanho ajustado para desktop */
+    font-size: 0.9rem;
+    width: auto; /* Permite que o texto defina a largura */
+    height: auto;
+    border-radius: 5px;
+}
+#desktop-action-bar .btn-action svg,
+#desktop-action-bar .btn-action-highlight svg {
+    width: 16px; /* Tamanho do ícone para desktop */
+    height: 16px;
+    margin-right: 5px; /* Espaço entre ícone e texto */
+}
+
 #workbench-area { /* A área de trabalho dos componentes */
     flex-grow: 1; /* Ocupa o espaço restante dentro do #main-workbench */
     background-color: #fff;
@@ -260,7 +285,6 @@ aside h2, aside h3 {
     border-radius: 5px;
     font-size: 1rem;
     transition: border-color 0.2s;
-    /* Adicionado */
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -434,19 +458,46 @@ aside h2, aside h3 {
     border: 1px solid #f5c6cb;
 }
 
+/* --- BARRA DE AÇÃO MOBILE (Escondida no desktop, visível no mobile) --- */
 #mobile-action-bar {
     display: none; /* Escondido por padrão no desktop */
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 60px; /* Altura padrão para desktop, será sobrescrita no mobile */
+    background-color: var(--cor-primaria);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 500;
+    gap: 15px; /* Espaço entre os botões */
+}
+#mobile-action-bar .btn {
+    width: 50px; /* Largura padrão para desktop, será sobrescrita no mobile */
+    height: 50px; /* Altura padrão para desktop, será sobrescrita no mobile */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    background-color: var(--cor-secundaria);
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+#mobile-action-bar .btn:hover {
+    transform: scale(1.1);
 }
 .btn-action {
     background-color: #fff !important;
     border: 1px solid var(--cor-borda) !important;
     color: var(--cor-primaria) !important;
-    margin: 0 5px;
 }
 .btn-action-highlight {
     background-color: var(--cor-secundaria) !important;
     color: white !important;
-    margin: 0 5px;
 }
 
 
@@ -487,10 +538,13 @@ aside h2, aside h3 {
         display: none; /* Esconde o painel de resultados em telas pequenas */
     }
 
-    #mobile-action-bar {
-        display: flex; /* Garante que a barra de ação móvel esteja visível */
-        /* Aumentando o tamanho dos botões na barra de ação móvel */
-        height: 80px; /* Aumenta a altura da barra */
+    #desktop-action-bar { /* Esconde a barra de ações desktop no mobile */
+        display: none;
+    }
+
+    #mobile-action-bar { /* Garante que a barra de ação móvel esteja visível */
+        display: flex;
+        height: 80px; /* Aumenta a altura da barra móvel */
     }
     #mobile-action-bar .btn {
         width: 70px; /* Torna os botões maiores */
