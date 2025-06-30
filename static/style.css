@@ -140,7 +140,6 @@ h2, h3 {
     border-color: var(--cor-sucesso);
 }
 
-
 /* --- PLATAFORMA PRINCIPAL --- */
 .platform-container {
     display: grid;
@@ -248,6 +247,49 @@ aside#component-library h3 {
     overflow: hidden;
 }
 
+.workbench-header {
+    background-color: var(--cor-fundo);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--cor-borda);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.workbench-header h1 {
+    flex: 1;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+#desktop-action-bar {
+    display: flex;
+    gap: 8px;
+}
+
+#desktop-action-bar .btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 5px;
+    font-size: 1rem;
+    border: 1px solid var(--cor-borda);
+    background-color: #fff;
+    color: var(--cor-primaria);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+#desktop-action-bar .btn.btn-action-highlight,
+#desktop-action-bar .btn.btn-highlight {
+    background-color: var(--cor-secundaria);
+    color: #fff;
+}
+
+#desktop-action-bar .btn:hover {
+    background: var(--cor-secundaria);
+    color: #fff;
+}
+
 #workbench-area {
     flex-grow: 1;
     background-color: #fff;
@@ -257,8 +299,10 @@ aside#component-library h3 {
         linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px);
     background-size: 20px 20px;
+    border: 1px solid #ccc;
 }
 
+/* Conexões (SVG) */
 #connection-canvas {
     position: absolute;
     top: 0;
@@ -275,6 +319,7 @@ aside#component-library h3 {
     stroke-linecap: round;
 }
 
+/* Componentes posicionados */
 .placed-component {
     position: absolute;
     display: flex;
@@ -402,10 +447,8 @@ aside#results-panel {
     display: none;
 }
 
-
 /* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
 @media (max-width: 900px) {
-    /* AJUSTES PARA PÁGINA DE LOGIN EM MOBILE */
     .auth-body .auth-container {
         width: 100%;
         height: 100%;
@@ -413,7 +456,6 @@ aside#results-panel {
         max-width: none;
         margin: 0;
         border-radius: 0;
-        /* Sua borda amarela de destaque */
         border: 4px solid var(--cor-destaque);
         display: flex;
         flex-direction: column;
@@ -421,7 +463,6 @@ aside#results-panel {
         box-shadow: none;
     }
 
-    /* AJUSTES PARA A PLATAFORMA EM MOBILE */
     .platform-container {
         grid-template-columns: 1fr;
         height: auto;
@@ -442,312 +483,10 @@ aside#results-panel {
         position: fixed;
         bottom: 0;
         left: 0;
-/* Importando fontes do Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
-
-/* --- TEMA GLOBAL E VARIÁVEIS --- */
-:root {
-    --cor-primaria: #003366;
-    --cor-secundaria: #005a9c;
-    --cor-destaque: #ffc107;
-    --cor-fundo: #f8f9fa;
-    --cor-texto: #212529;
-    --cor-sucesso: #28a745;
-    --cor-erro: #dc3545;
-    --cor-borda: #dee2e6;
-    --cor-fundo-component-item: #e9ecef;
-}
-
-/* --- ESTILOS GERAIS E RESET --- */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Roboto', sans-serif;
-}
-
-body {
-    line-height: 1.6;
-    background-color: var(--cor-fundo);
-    color: var(--cor-texto);
-}
-
-h2, h3 {
-    font-family: 'Oswald', sans-serif;
-    color: var(--cor-primaria);
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-.btn {
-    padding: 0.8rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.2s, transform 0.2s;
-}
-
-/* --- PÁGINAS DE AUTENTICAÇÃO (LOGIN E REGISTRO) --- */
-.auth-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 1rem;
-}
-
-.auth-container {
-    width: 100%;
-    max-width: 420px;
-    padding: 2.5rem;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    text-align: center;
-}
-
-.auth-container .input-group {
-    text-align: left;
-    margin-bottom: 1.5rem;
-}
-
-.auth-container .input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.auth-container .input-group input {
-    width: 100%;
-    padding: 0.8rem;
-    border: 1px solid var(--cor-borda);
-    border-radius: 5px;
-    font-size: 1rem;
-}
-
-.password-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.password-toggle-btn {
-    position: absolute;
-    right: 5px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    color: var(--cor-secundaria);
-    opacity: 0.7;
-}
-
-.auth-container .btn {
-    width: 100%;
-    background-color: var(--cor-primaria);
-    color: white;
-}
-
-.auth-container .btn:hover {
-    background-color: var(--cor-secundaria);
-}
-
-.auth-switch {
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-}
-
-.auth-switch a {
-    color: var(--cor-secundaria);
-    font-weight: bold;
-    text-decoration: none;
-}
-
-.flash-message {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 5px;
-    border: 1px solid transparent;
-}
-
-.flash-message.error {
-    background-color: #f8d7da;
-    color: var(--cor-erro);
-    border-color: var(--cor-erro);
-}
-
-/* --- PLATAFORMA PRINCIPAL --- */
-.platform-container {
-    display: grid;
-    grid-template-columns: 300px 1fr; /* Removido o painel de resultados do grid inicial */
-    height: 100vh;
-}
-
-aside#component-library {
-    padding: 1.5rem;
-    background-color: #fff;
-    border-right: 1px solid var(--cor-borda);
-    overflow-y: auto;
-}
-
-.user-panel {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    margin-bottom: 1.5rem;
-    background-color: var(--cor-fundo-component-item);
-    border-radius: 8px;
-}
-
-#welcome-message { font-weight: bold; color: var(--cor-primaria); }
-.btn-logout { background: none; border: none; cursor: pointer; color: var(--cor-erro); padding: 0.5rem; }
-
-#projects-panel, #library-panel { margin-bottom: 2rem; }
-
-#project-list, .component-list {
-    list-style: none;
-    padding: 0;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid var(--cor-borda);
-    border-radius: 5px;
-}
-
-#project-list li, .component-item {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    border-bottom: 1px solid var(--cor-borda);
-    transition: background-color 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#project-list li:last-child, .component-item:last-child { border-bottom: none; }
-#project-list li:hover, .component-item:hover { background-color: var(--cor-fundo-component-item); }
-
-.add-btn {
-    background-color: var(--cor-secundaria);
-    color: white;
-    border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-#main-workbench {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.workbench-header {
-    background-color: var(--cor-fundo);
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--cor-borda);
-    display: flex;
-    gap: 10px;
-    flex-shrink: 0;
-}
-
-.workbench-header .btn {
-    background-color: #fff;
-    border: 1px solid var(--cor-borda);
-    color: var(--cor-primaria);
-}
-
-.workbench-header .btn.highlight {
-    background-color: var(--cor-secundaria);
-    color: white;
-}
-
-#workbench-area {
-    flex-grow: 1;
-    background-color: #fff;
-    position: relative;
-    overflow: auto;
-    background-image:
-        linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px);
-    background-size: 20px 20px;
-}
-
-#connection-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-.belt-line { stroke: var(--cor-texto); stroke-width: 4px; stroke-linecap: round; }
-
-.placed-component {
-    position: absolute;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.8rem;
-    cursor: grab;
-    z-index: 10;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-.placed-component.dragging { cursor: grabbing; z-index: 100; }
-.component-label { position: absolute; bottom: -25px; font-size: 0.75rem; color: var(--cor-texto); text-align: center; width: max-content;}
-
-.motor { width: 80px; height: 80px; background-color: var(--cor-sucesso); border-radius: 10px; border: 2px solid #208038;}
-.polia_motora, .polia_movida { width: 100px; height: 100px; background-color: var(--cor-secundaria); border-radius: 50%; border: 2px solid var(--cor-primaria);}
-.rolamento { width: 40px; height: 40px; background-color: var(--cor-destaque); border-radius: 50%; border: 2px solid #c79100;}
-
-aside#results-panel {
-    width: 350px;
-    background-color: #fff;
-    padding: 1.5rem;
-    border-left: 1px solid var(--cor-borda);
-    overflow-y: auto;
-}
-.hidden { display: none !important; }
-
-/* --- MODAIS --- */
-.modal-backdrop {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 1000;
-}
-.modal-content {
-    background-color: #fff; padding: 2rem; border-radius: 10px;
-    max-width: 500px; width: 90%;
-}
-.modal-content .btn { margin-top: 1rem; }
-
-/* --- RESPONSIVIDADE --- */
-@media (max-width: 900px) {
-    /* LOGIN EM TELA CHEIA NO MOBILE */
-    .auth-body .auth-container {
-        width: 100%; height: 100vh; max-width: none; margin: 0;
-        border-radius: 0; border: 4px solid var(--cor-destaque);
-        display: flex; flex-direction: column; justify-content: center;
-        box-shadow: none;
+        z-index: 2001;
     }
 
-    /* PLATAFORMA EM MOBILE */
-    .platform-container {
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-    }
-
-    #main-workbench { flex-grow: 1; }
-    aside#component-library { display: none; /* Escondido para simplificar */ }
-    aside#results-panel {
-        position: fixed; top: 0; right: 0;
-        height: 100%; width: 90%; max-width: 350px;
-        transform: translateX(100%);
-        transition: transform 0.3s ease-in-out;
-        z-index: 2000;
-    }
-    aside#results-panel:not(.hidden) {
-        transform: translateX(0);
+    #main-workbench {
+        min-height: 100vh;
     }
 }
