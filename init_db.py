@@ -1,11 +1,11 @@
+# init_db.py
 from app import app, db
 
-# Este script importa a app e o objeto db do nosso app.py
-# e executa o comando para criar as tabelas.
-# Ele precisa do contexto da aplicação para saber onde (qual URL de DB) criar as tabelas.
+print("Iniciando a criação do banco de dados...")
 
 with app.app_context():
-    print("Iniciando a criação do banco de dados...")
-    db.create_all()
-    print("Banco de dados e tabelas criados com sucesso.")
-
+    try:
+        db.create_all()
+        print("Tabelas do banco de dados criadas com sucesso.")
+    except Exception as e:
+        print(f"Ocorreu um erro ao criar as tabelas: {e}")
