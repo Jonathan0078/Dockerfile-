@@ -1,0 +1,49 @@
+{
+  "rolamentos": [
+    {
+      "modelo": "21308 CC",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 83000
+    },
+    {
+      "modelo": "22212 CC",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 165000
+    },
+    {
+      "modelo": "22220 CC",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 500000
+    },
+    {
+      "modelo": "YAR 205",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 23000
+    },
+    {
+      "modelo": "YAR 210",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 35100
+    },
+    {
+      "modelo": "UC 205",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 18000
+    },
+    {
+      "modelo": "UC 210",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 40000
+    },
+    {
+      "modelo": "30310",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 140000
+    },
+    {
+      "modelo": "32010",
+      "tipo": "Rolo Esférico Autocompensador",
+      "carga_c": 160000
+    }
+  ]
+}
