@@ -100,3 +100,58 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--cor-fundo); co
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+/* --- PAINEL DO USUÁRIO E PROJETOS --- */
+.user-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--cor-fundo);
+    border-radius: 8px;
+}
+
+#welcome-message {
+    font-weight: bold;
+    color: var(--cor-primaria);
+}
+
+.btn-logout {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cor-erro);
+    padding: 0.5rem;
+}
+.btn-logout:hover {
+    color: #a71d2a;
+}
+
+#projects-panel {
+    margin-bottom: 2rem;
+}
+
+#project-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+#project-list li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+}
+
+#project-list li:hover {
+    background-color: var(--cor-fundo);
+}
+
+#project-list li:last-child {
+    border-bottom: none;
+}
