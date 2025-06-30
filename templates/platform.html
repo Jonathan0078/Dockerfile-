@@ -4,21 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Plataforma de Engenharia</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="stylesheet" href="style.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
     <div class="platform-container">
         <aside id="component-library">
             <div class="user-panel">
                 <span id="welcome-message">Bem-vindo!</span>
-                <a href="{{ url_for('logout') }}" class="btn-logout" title="Sair">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
-                        <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-                    </svg>
-                </a>
+                <!-- Botão de logout removido para site estático -->
             </div>
             <div id="projects-panel">
                 <h3>Meus Projetos</h3>
@@ -113,7 +109,6 @@
         <button id="settings-button" class="btn btn-action" title="Otimizar Sistema">Otimizar</button>
         <button id="analyze-button-mobile" class="btn btn-action-highlight" title="Analisar Sistema">Analisar</button>
     </div>
-
-    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>
+
