@@ -241,5 +241,23 @@ def get_component_database():
             "rolamentos": rolamentos_list,
             "polias": {"diametros_comerciais_mm": polias_diametros_list}
         })
+    # ROTA PARA CARREGAR O BANCO DE DADOS DE COMPONENTES (MODIFICADA)
+@app.route('/get_component_database')
+def get_component_database():
+    try:
+        # Busca rolamentos do DB
+        rolamentos_db = Rolamento.query.all()
+        rolamentos_list = [r.to_dict() for r in rolamentos_db]
+
+        # Busca diâmetros de polia do DB
+        polias_diametros_db = PoliaDiametro.query.order_by(PoliaDiametro.diametro_mm).all()
+        polias_diametros_list = [p.diametro_mm for p in polias_diametros_db]
+        
+        return jsonify({
+            "rolamentos": rolamentos_list,
+            "polias": {"diametros_comerciais_mm": polias_diametros_list}
+        })
     except Exception as e:
-        print(f"ERRO ao carregar o banco de dados de componentes do DB: {e
+        # Linha 245: CORRIGIDO o erro de sintaxe substituindo a f-string
+        print("ERRO ao carregar o banco de dados de componentes do DB: {}".format(e))
+        return jsonify({"error": str(e)}), 500
