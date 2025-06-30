@@ -1137,3 +1137,23 @@ aside#results-panel {
     }
 }
 
+        .girar {
+  animation: rotacao 2s linear infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes rotacao {
+  100% { transform: rotate(360deg); }
+}
+.placed-component {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+  cursor: pointer;
+}
+.component-label {
+  font-size: 12px;
+  margin-top: 2px;
+  text-align: center;
+}
+        
