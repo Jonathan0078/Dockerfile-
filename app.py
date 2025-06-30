@@ -1,5 +1,7 @@
 import os
 import json
+import math
+import itertools
 from flask import Flask, jsonify, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
@@ -12,13 +14,16 @@ app = Flask(__name__)
 # Pega a URL do banco de dados do ambiente do Render
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
-    raise RuntimeError("FATAL: A variável de ambiente DATABASE_URL não foi encontrada.")
+    # Esta mensagem de erro é crucial para o Render
+    print("FATAL: A variável de ambiente DATABASE_URL não foi encontrada. Certifique-se de configurá-la no Render.")
+    # Permite rodar localmente com SQLite se a variável não estiver presente
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///platform.db'
+else:
+    # Garante compatibilidade com o SQLAlchemy para PostgreSQL
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 
-# Garante compatibilidade com o SQLAlchemy
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma-chave-secreta-muito-segura')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -42,6 +47,120 @@ class Project(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# --- LÓGICA DE CÁLCULO E ANÁLISE ---
+# Esta classe é essencial para as rotas de análise e otimização.
+class AnalisadorDeSistema:
+    def __init__(self, system_data):
+        self.system = system_data
+        self.motor = self._get_component('motor')
+        self.polia_motora = self._get_component('polia_motora')
+        self.polia_movida = self._get_component('polia_movida')
+        self.rolamentos = self._get_components('rolamento')
+
+    def _get_component(self, comp_type):
+        return next((c['data'] for c in self.system['components'] if c['type'] == comp_type), None)
+
+    def _get_components(self, comp_type):
+        return [c['data'] for c in self.system['components'] if c['type'] == comp_type]
+
+    def _calcular_carga_radial(self, potencia_kw, rpm_motor, diametro_polia_mm, tipo_correia):
+        potencia_w = potencia_kw * 1000
+        velocidade_linear_ms = (math.pi * diametro_polia_mm / 1000) * (rpm_motor / 60)
+        
+        # Evita divisão por zero
+        if velocidade_linear_ms == 0:
+            return 0
+            
+        forca_tangencial_n = potencia_w / velocidade_linear_ms
+        
+        # Fatores K para cada tipo de correia (simplificado)
+        if tipo_correia == 'V':
+            fator_correia = 1.5 # Fator para correia em V
+        elif tipo_correia == 'sincronizadora':
+            fator_correia = 1.1 # Fator para correia sincronizadora
+        else: # Tipo plana ou desconhecido
+            fator_correia = 2.0
+            
+        carga_radial_n = forca_tangencial_n * fator_correia
+        return carga_radial_n
+
+    def _calcular_vida_util_rolamento(self, carga_dinamica_c, carga_equivalente_p, rpm, tipo):
+        if carga_equivalente_p == 0:
+            return float('inf') # Vida infinita se não houver carga
+
+        fator_vida_l = 10**6 # Ciclos (milhões de revoluções)
+        
+        # Expoente de vida para rolamentos de esferas (3) e rolos (10/3)
+        if tipo.lower() == 'esferas':
+            a = 3
+        else: # Rolos ou outros
+            a = 10/3
+        
+        vida_milhoes_rev = (carga_dinamica_c / carga_equivalente_p)**a
+        vida_horas = (vida_milhoes_rev * fator_vida_l) / (rpm * 60)
+        return vida_horas
+
+    def analisar(self):
+        if not self.motor or not self.polia_motora or not self.polia_movida or not self.rolamentos:
+            raise ValueError("Dados de componentes incompletos para análise. Certifique-se de adicionar Motor, Polias e Rolamentos.")
+
+        # 1. Análise de Transmissão
+        rpm_saida = (self.motor['rpm'] * self.polia_motora['diameter']) / self.polia_movida['diameter']
+        
+        # 2. Análise de Carga e Vida Útil
+        potencia_kw = float(self.motor['power_kw'])
+        rpm_motor = float(self.motor['rpm'])
+        diametro_polia_motora = float(self.polia_motora['diameter'])
+        tipo_correia = self.polia_motora.get('belt_type', 'V')
+        
+        carga_radial_n = self._calcular_carga_radial(potencia_kw, rpm_motor, diametro_polia_motora, tipo_correia)
+        
+        resultados_componentes = {}
+        for i, rolamento in enumerate(self.rolamentos):
+            # Para simplificação, a carga equivalente P é considerada igual à carga radial
+            carga_equivalente_p = carga_radial_n / 2 # A carga é dividida entre dois rolamentos
+            vida_util_l10h = self._calcular_vida_util_rolamento(
+                float(rolamento['dynamic_load_c']), 
+                carga_equivalente_p, 
+                rpm_saida, 
+                rolamento['bearing_type']
+            )
+            resultados_componentes[f'comp_{i+1}'] = {
+                'tipo': 'Rolamento',
+                'modelo': rolamento.get('modelo', 'N/A'),
+                'carga_radial_n': round(carga_radial_n, 2),
+                'vida_util_l10h': round(vida_util_l10h, 2)
+            }
+            
+        # 3. Análise Financeira e Energética (Simplificada)
+        eficiencia_transmissao = 0.95 if tipo_correia == 'V' else 0.98
+        potencia_saida_kw = potencia_kw * eficiencia_transmissao
+        potencia_perdida_watts = potencia_kw * 1000 * (1 - eficiencia_transmissao)
+        
+        horas_operacao_dia = float(self.motor.get('operating_hours', 8))
+        dias_operacao_ano = 260 # Assumindo 5 dias por semana
+        
+        consumo_anual_kwh = (potencia_kw * horas_operacao_dia * dias_operacao_ano)
+        custo_energia_kwh = float(self.motor.get('cost_per_kwh', 0.75))
+        custo_operacional_anual_brl = consumo_anual_kwh * custo_energia_kwh
+            
+        return {
+            'sistema': {
+                'Relacao de Transmissao': round(self.polia_movida['diameter'] / self.polia_motora['diameter'], 2),
+                'RPM da Polia Movida': round(rpm_saida, 2),
+                'Carga Radial no Eixo (N)': round(carga_radial_n, 2),
+                'Potencia de Saida (kW)': round(potencia_saida_kw, 2),
+                'Componentes no Sistema': len(self.system['components'])
+            },
+            'financeiro_energetico': {
+                'eficiencia_transmissao': f'{eficiencia_transmissao * 100}%',
+                'potencia_perdida_watts': round(potencia_perdida_watts, 2),
+                'consumo_anual_kwh': round(consumo_anual_kwh, 2),
+                'custo_operacional_anual_brl': round(custo_operacional_anual_brl, 2)
+            },
+            **resultados_componentes # Adiciona os resultados dos rolamentos
+        }
 
 # --- ROTAS DA APLICAÇÃO ---
 @app.route('/')
@@ -71,22 +190,112 @@ def register():
         flash('Cadastro realizado com sucesso! Faça o login.'); return redirect(url_for('login'))
     return render_template('register.html')
     
-# (As outras rotas não precisam de alteração)
 @app.route('/logout')
-def logout(): logout_user(); return redirect(url_for('index'))
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
 @app.route('/dashboard')
 @login_required
-def dashboard(): return render_template('platform.html')
-# ... (demais rotas da API aqui)
+def dashboard():
+    return render_template('platform.html')
 
-# --- INICIALIZAÇÃO DO BANCO DE DADOS (SE NECESSÁRIO) ---
-with app.app_context():
-    inspector = inspect(db.engine)
-    # Verifica se a tabela 'user' (ou qualquer outra) já existe
-    if not inspector.has_table("user"):
-        print("Tabelas não encontradas, criando banco de dados...")
-        db.create_all()
-        print("Banco de dados e tabelas criados com sucesso.")
-    else:
-        print("Tabelas já existem, pulando a criação.")
+# --- ROTAS DA API ---
 
+# ROTA PARA CARREGAR O BANCO DE DADOS DE COMPONENTES
+@app.route('/get_component_database')
+def get_component_database():
+    try:
+        # Usa app.root_path para garantir que o caminho do arquivo é absoluto e correto
+        database_path = os.path.join(app.root_path, 'database.json')
+        with open(database_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except FileNotFoundError:
+        print(f"ERRO: database.json não encontrado em {database_path}")
+        return jsonify({"error": "Arquivo do banco de dados não encontrado no servidor."}), 500
+    except json.JSONDecodeError as e:
+        print(f"ERRO: Formato inválido no database.json: {e}")
+        return jsonify({"error": "O arquivo do banco de dados está corrompido ou mal formatado."}), 500
+    except Exception as e:
+        print(f"ERRO GENÉRICO ao carregar o banco de dados: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# ROTA PARA SALVAR PROJETOS
+@app.route('/save_project', methods=['POST'])
+@login_required
+def save_project():
+    data = request.get_json()
+    project_name = data.get('project_name')
+    system_state = data.get('system_state')
+    if not project_name or not system_state:
+        return jsonify({"error": "Dados incompletos."}), 400
+    
+    new_project = Project(
+        project_name=project_name,
+        system_state_json=json.dumps(system_state),
+        author=current_user
+    )
+    db.session.add(new_project)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Projeto salvo com sucesso!", "project_id": new_project.id})
+
+# ROTA PARA LISTAR PROJETOS
+@app.route('/get_projects', methods=['GET'])
+@login_required
+def get_projects():
+    projects = Project.query.filter_by(user_id=current_user.id).all()
+    project_list = [{"id": p.id, "name": p.project_name} for p in projects]
+    return jsonify(project_list)
+
+# ROTA DE ANÁLISE
+@app.route('/analyze_system', methods=['POST'])
+def analyze_system_route():
+    try:
+        return jsonify(AnalisadorDeSistema(request.get_json()).analisar())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+# ROTA DE OTIMIZAÇÃO
+@app.route('/optimize_system', methods=['POST'])
+def optimize_system_route():
+    try:
+        data = request.get_json(); base_system = data['system']; goal = data['goal']
+        database_path = os.path.join(app.root_path, 'database.json')
+        with open(database_path, 'r', encoding='utf-8') as f:
+            db_file = json.load(f)
+        p_opts = db_file['polias']['diametros_comerciais_mm']; b_opts = db_file['rolamentos']; solutions = []
+        p_combos = list(itertools.product(p_opts, repeat=2)); b_combos = list(itertools.product(b_opts, repeat=2))
+        total_combos = list(itertools.product(p_combos, b_combos))
+        for p_combo, b_combo in total_combos[:1500]: # Limita o número de combinações para performance
+            cs = json.loads(json.dumps(base_system))
+            if len(cs['components']) >= 5:
+                cs['components'][1]['data']['diameter'] = p_combo[0]; cs['components'][2]['data']['diameter'] = p_combo[1]
+                cs['components'][3]['data'] = {'modelo': b_combo[0]['modelo'], 'bearing_type': b_combo[0]['tipo'], 'dynamic_load_c': b_combo[0]['carga_c']}
+                cs['components'][4]['data'] = {'modelo': b_combo[1]['modelo'], 'bearing_type': b_combo[1]['tipo'], 'dynamic_load_c': b_combo[1]['carga_c']}
+            else: continue
+            r = AnalisadorDeSistema(cs).analisar()
+            cost = r.get('financeiro_energetico', {}).get('custo_operacional_anual_brl', 0)
+            eff = float(r.get('financeiro_energetico', {}).get('eficiencia_transmissao', '0%').replace('%',''))
+            lifespans = [v['vida_util_l10h'] for k,v in r.items() if k.startswith('comp_')]; min_life = min(lifespans) if lifespans else 0
+            solutions.append({"config": f"P:{p_combo[0]}/{p_combo[1]} R:{b_combo[0]['modelo']}/{b_combo[1]['modelo']}", "cost": cost, "efficiency": eff, "min_life": min_life})
+        if goal == 'cost': solutions.sort(key=lambda x: x['cost'])
+        elif goal == 'life': solutions.sort(key=lambda x: x['min_life'], reverse=True)
+        elif goal == 'efficiency': solutions.sort(key=lambda x: x['efficiency'], reverse=True)
+        return jsonify(solutions[:5])
+    except Exception as e: return jsonify({"error": str(e)}), 400
+
+# --- INICIALIZAÇÃO DO SERVIDOR ---
+if __name__ == '__main__':
+    with app.app_context():
+        # Usa o inspetor para verificar a existência das tabelas no banco de dados.
+        inspector = inspect(db.engine)
+        if not inspector.has_table("user"):
+            print("Tabelas não encontradas, criando o esquema do banco de dados...")
+            db.create_all()
+            print("Banco de dados e tabelas criados com sucesso.")
+        else:
+            print("Tabelas já existem, pulando a criação.")
+    
+    # Executa o aplicativo
+    app.run(debug=True)
