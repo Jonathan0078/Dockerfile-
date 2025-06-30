@@ -6,14 +6,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveButton = document.getElementById('save-button');
     const clearButton = document.getElementById('clear-button');
     const settingsButton = document.getElementById('settings-button');
-    const analyzeButton = document.getElementById('analyze-button');
+    const analyzeButton = document.getElementById('analyze-button'); // Botão de análise no cabeçalho desktop
     const saveProjectModal = document.getElementById('save-project-modal');
     const saveProjectForm = document.getElementById('save-project-form');
     const saveModalCloseBtn = document.getElementById('save-modal-close-btn');
     const projectList = document.getElementById('project-list');
     const welcomeMessage = document.getElementById('welcome-message');
     const library = document.getElementById('component-library');
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
+    const workbench = document.getElementById('workbench-area'); // AGORA SELECIONA DIRETAMENTE A ÁREA DA BANCADA
     const generatePdfBtn = document.getElementById('generate-pdf-btn');
     const resultsPanel = document.getElementById('results-panel');
     const connectionCanvas = document.getElementById('connection-canvas');
@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const optimizeModal = document.getElementById('optimize-modal');
     const optimizeForm = document.getElementById('optimize-form');
     const optimizeModalCloseBtn = document.getElementById('optimize-modal-close-btn');
+    const analyzeButtonMobile = document.getElementById('analyze-button-mobile'); // Botão de análise na barra mobile
     
     // --- ESTADO DA APLICAÇÃO ---
     let systemState = { components: [], connections: [] };
@@ -35,7 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let componentDatabase = {};
 
     // --- INICIALIZAÇÃO ROBUSTA ---
-    // Faz a busca inicial de dados, mas garante que o script não trave
     await initializeData();
 
     async function initializeData() {
@@ -94,16 +94,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (projectList) { /* ... */ }
-    if (analyzeButton) { analyzeButton.addEventListener('click', handleAnalyzeClick); }
+    if (analyzeButton) { analyzeButton.addEventListener('click', handleAnalyzeClick); } // Botão de análise desktop
+    if (analyzeButtonMobile) { analyzeButtonMobile.addEventListener('click', handleAnalyzeClick); } // Botão de análise mobile
     if (generatePdfBtn) { generatePdfBtn.addEventListener('click', generatePDF); }
     if (modalCloseBtn) { modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden')); }
     if (modalForm) { modalForm.addEventListener('submit', handleModalSubmit); }
 
     // --- FUNÇÕES DE PROJETO, ANÁLISE E OTIMIZAÇÃO ---
-    // Esta função foi movida para o início para ser chamada como async
-    // async function initializeData() { ... }
-    
-    // As funções a seguir são as mesmas, sem alterações
     async function fetchAndDisplayProjects() { /* ... */
         try {
             const response = await fetch('/get_projects');
@@ -283,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function drag(e) {
-        if (activeComponent && workbench) { // Adicionada verificação
+        if (activeComponent && workbench) {
             e.preventDefault();
             const touch = e.type === 'touchmove' ? e.touches[0] : e;
             const workbenchRect = workbench.getBoundingClientRect();
@@ -318,7 +315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentEditingComponentId = id;
         const component = systemState.components.find(c => c.id === id);
         if (!component) return;
-        if (!modal || !modalTitle || !modalFields) return; // Adicionada verificação
+        if (!modal || !modalTitle || !modalFields) return;
         modalTitle.textContent = `Configurar ${component.type.replace(/_/g, ' ')}`;
         let fieldsHtml = '';
         const data = component.data;
@@ -376,6 +373,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const payload = { components: systemState.components, connections: [] };
         try {
+            resultsContent.innerHTML = '<div class="loading-message">Analisando...</div>'; // Feedback de carregamento
+            resultsPanel.classList.remove('hidden'); // Mostra o painel imediatamente
+            
             const response = await fetch('/analyze_system', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -429,6 +429,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function generatePDF() {
+        if (!workbench) {
+            alert("A área de trabalho não está visível para gerar o PDF.");
+            return;
+        }
         const doc = new jsPDF();
         const workbenchImage = await html2canvas(workbench, {
             backgroundColor: "#ffffff",
@@ -480,7 +484,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function drawConnections() {
-        if (!connectionCanvas) return; // Adicionada verificação
+        if (!connectionCanvas) return;
         connectionCanvas.innerHTML = '';
         const p1 = systemState.components.find(c => c.type === 'polia_motora');
         const p2 = systemState.components.find(c => c.type === 'polia_movida');
