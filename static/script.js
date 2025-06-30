@@ -1,24 +1,18 @@
 // Versão completa com sistema de salvamento de projetos e otimização
 const { jsPDF } = window.jspdf;
 
-// --- FUNÇÕES DE INICIALIZAÇÃO E AÇÕES (MOVIDAS PARA O TOPO) ---
-// Estas funções e variáveis são declaradas no escopo global para serem acessíveis por todo o script.
-
-// Variáveis de estado global
+// --- VARIÁVEIS DE ESTADO GLOBAL ---
 let systemState = { components: [], connections: [] };
 let componentCounter = 0;
 let currentEditingComponentId = null;
 let lastResults = {};
 let componentDatabase = {};
-
 let activeComponent = null; 
 let offsetX = 0; 
 let offsetY = 0;
 
-// Funções de inicialização de dados
+// --- FUNÇÕES DE INICIALIZAÇÃO ---
 async function initializeData() {
-    // Estas são as variáveis que serão selecionadas dentro do DOMContentLoaded
-    // Mas precisamos delas aqui para a função ser autônoma
     const welcomeMessage = document.getElementById('welcome-message');
     const projectList = document.getElementById('project-list');
 
@@ -26,21 +20,16 @@ async function initializeData() {
         const response = await fetch('/get_component_database');
         if (!response.ok) throw new Error('Falha na resposta do servidor para o banco de dados.');
         componentDatabase = await response.json();
+        if (!componentDatabase.rolamentos) componentDatabase.rolamentos = [];
     } catch (error) {
-        console.error("Erro ao carregar o banco de dados de componentes:", error);
-        // O alert aqui é um fallback, se o JS seguir, o modal de erro será melhor
         alert("Não foi possível carregar o banco de dados de componentes. A lista de rolamentos não estará disponível.");
+        componentDatabase.rolamentos = [];
     }
     
     try {
-        // fetchAndDisplayProjects precisa de projectList, que será selecionado no DOMContentLoaded
-        // Por isso, fazemos uma checagem defensiva aqui.
         if (projectList) {
             await fetchAndDisplayProjects();
-        } else {
-            console.warn("projectList element not found, skipping fetchAndDisplayProjects.");
         }
-        
     } catch (error) {
         console.error("Erro na inicialização ao carregar projetos:", error);
     }
@@ -50,18 +39,13 @@ async function initializeData() {
     }
 }
 
-// Funções de requisição e manipulação de resultados
+// --- FUNÇÕES DE PROJETOS ---
 async function fetchAndDisplayProjects() {
-    const projectList = document.getElementById('project-list'); // Selecionado aqui também para a função ser independente
-    if (!projectList) {
-        console.error("projectList element not found in fetchAndDisplayProjects.");
-        return;
-    }
+    const projectList = document.getElementById('project-list');
+    if (!projectList) return;
     try {
         const response = await fetch('/get_projects');
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const projects = await response.json();
         projectList.innerHTML = '';
         if (projects.length === 0) {
@@ -76,12 +60,13 @@ async function fetchAndDisplayProjects() {
             });
         }
     } catch (error) {
-        console.error("Erro ao buscar projetos:", error);
         projectList.innerHTML = '<li>Erro ao carregar projetos.</li>';
     }
 }
 
-async function loadProject(projectId) { alert('Funcionalidade de carregar projeto ainda não implementada!'); }
+async function loadProject(projectId) {
+    alert('Funcionalidade de carregar projeto ainda não implementada!');
+}
 
 async function handleSaveProject(e) {
     e.preventDefault();
@@ -100,7 +85,7 @@ async function handleSaveProject(e) {
         const result = await response.json();
         if (result.success) {
             alert('Projeto salvo com sucesso!');
-            document.getElementById('save-project-modal').classList.add('hidden'); // Usa ID direto
+            document.getElementById('save-project-modal').classList.add('hidden');
             await fetchAndDisplayProjects();
         } else {
             throw new Error(result.error || 'Falha ao salvar o projeto.');
@@ -110,38 +95,20 @@ async function handleSaveProject(e) {
     }
 }
 
-function clearWorkbench() {
-    systemState.components = [];
-    renderWorkbench();
-    const resultsPanel = document.getElementById('results-panel'); // Seleciona aqui
-    const resultsMobileModal = document.getElementById('results-mobile-modal'); // Seleciona aqui
-    const generatePdfBtn = document.getElementById('generate-pdf-btn'); // Seleciona aqui
-
-    if (resultsPanel) resultsPanel.classList.add('hidden');
-    if (resultsMobileModal) resultsMobileModal.classList.add('hidden');
-    if (generatePdfBtn) generatePdfBtn.classList.add('hidden');
-    console.log('Bancada de trabalho limpa.');
-}
-
+// --- OTIMIZAÇÃO E ANÁLISE ---
 async function handleOptimizeSubmit(e) {
     e.preventDefault();
-    
     if (systemState.components.length < 5) {
         alert("Para otimizar, o sistema precisa ter pelo menos um motor, duas polias e dois rolamentos.");
         return;
     }
-
     const selectedGoalInput = document.querySelector('input[name="optimization_goal"]:checked');
     if (!selectedGoalInput) {
         alert("Por favor, selecione um objetivo de otimização.");
         return;
     }
     const goal = selectedGoalInput.value;
-
-    const payload = {
-        system: systemState,
-        goal: goal
-    };
+    const payload = { system: systemState, goal: goal };
 
     const resultsMobileContent = document.getElementById('results-mobile-content');
     const resultsMobileModal = document.getElementById('results-mobile-modal');
@@ -151,15 +118,15 @@ async function handleOptimizeSubmit(e) {
 
     try {
         if (window.innerWidth <= 768 && resultsMobileContent && resultsMobileModal) {
-             resultsMobileContent.innerHTML = '<div class="loading-message">Otimizando... Isso pode levar um momento.</div>';
-             resultsMobileModal.classList.remove('hidden');
-             document.getElementById('results-mobile-title').textContent = "Resultados da Otimização"; // Título
+            resultsMobileContent.innerHTML = '<div class="loading-message">Otimizando... Isso pode levar um momento.</div>';
+            resultsMobileModal.classList.remove('hidden');
+            document.getElementById('results-mobile-title').textContent = "Resultados da Otimização";
         } else if (resultsContent && resultsPanel) {
-             resultsContent.innerHTML = '<div class="loading-message">Otimizando... Isso pode levar um momento.</div>';
-             resultsPanel.classList.remove('hidden');
+            resultsContent.innerHTML = '<div class="loading-message">Otimizando... Isso pode levar um momento.</div>';
+            resultsPanel.classList.remove('hidden');
         } else {
-             alert("Otimizando... Isso pode levar um momento.");
-             return;
+            alert("Otimizando... Isso pode levar um momento.");
+            return;
         }
         
         const response = await fetch('/optimize_system', {
@@ -167,15 +134,10 @@ async function handleOptimizeSubmit(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
         const results = await response.json();
-        
-        if (results.error) {
-            throw new Error(results.error);
-        }
-        
+        if (results.error) throw new Error(results.error);
         displayOptimizationResults(results, goal);
-        document.getElementById('optimize-modal').classList.add('hidden'); // Fecha o modal de otimização
+        document.getElementById('optimize-modal').classList.add('hidden');
     } catch (error) {
         const errorMessage = `<div style="color: var(--cor-erro);"><strong>Erro na otimização:</strong> ${error.message}</div>`;
         if (window.innerWidth <= 768 && resultsMobileContent && resultsMobileModal) {
@@ -190,7 +152,59 @@ async function handleOptimizeSubmit(e) {
     }
 }
 
-// Função para exibir resultados de análise ou otimização (AJUSTADA PARA EXIBIÇÃO CONDICIONAL)
+async function handleAnalyzeClick() {
+    if (systemState.components.length === 0) {
+        alert("Bancada de trabalho vazia. Adicione componentes para analisar.");
+        return;
+    }
+    const payload = { components: systemState.components, connections: [] };
+    try {
+        const resultsMobileContent = document.getElementById('results-mobile-content');
+        const resultsMobileModal = document.getElementById('results-mobile-modal');
+        const resultsContent = document.getElementById('results-content');
+        const resultsPanel = document.getElementById('results-panel');
+
+        if (window.innerWidth <= 768 && resultsMobileContent && resultsMobileModal) {
+            resultsMobileContent.innerHTML = '<div class="loading-message">Analisando...</div>';
+            resultsMobileModal.classList.remove('hidden');
+            document.getElementById('results-mobile-title').textContent = "Resultados da Análise";
+        } else if (resultsContent && resultsPanel) {
+            resultsContent.innerHTML = '<div class="loading-message">Analisando...</div>';
+            resultsPanel.classList.remove('hidden');
+        } else {
+            alert("Analisando... Isso pode levar um momento.");
+            return;
+        }
+        
+        const response = await fetch('/analyze_system', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const results = await response.json();
+        if (results.error) throw new Error(results.error);
+        lastResults = results;
+        displayResults(results);
+    } catch (error) {
+        const errorMessage = `<div style="color: var(--cor-erro);"><strong>Erro na análise:</strong> ${error.message}</div>`;
+        const resultsMobileContent = document.getElementById('results-mobile-content');
+        const resultsMobileModal = document.getElementById('results-mobile-modal');
+        const resultsContent = document.getElementById('results-content');
+        const resultsPanel = document.getElementById('results-panel');
+
+        if (window.innerWidth <= 768 && resultsMobileContent && resultsMobileModal) {
+            resultsMobileContent.innerHTML = errorMessage;
+            resultsMobileModal.classList.remove('hidden');
+        } else if (resultsContent && resultsPanel) {
+            resultsContent.innerHTML = errorMessage;
+            resultsPanel.classList.remove('hidden');
+        } else {
+            alert(`Erro na análise: ${error.message}`);
+        }
+    }
+}
+
+// --- EXIBIÇÃO DE RESULTADOS ---
 function displayResults(results) {
     let targetContentElement;
     let targetPanelElement;
@@ -210,7 +224,6 @@ function displayResults(results) {
         targetContentElement = resultsContent;
         targetPanelElement = resultsPanel;
     } else {
-        console.error("Target results elements not found for display.");
         return;
     }
 
@@ -252,7 +265,6 @@ function displayResults(results) {
     }
 }
 
-// Função para exibir resultados de otimização (AJUSTADA PARA EXIBIÇÃO CONDICIONAL)
 function displayOptimizationResults(results, goal) {
     let targetContentElement;
     let targetPanelElement;
@@ -272,7 +284,6 @@ function displayOptimizationResults(results, goal) {
         targetContentElement = resultsContent;
         targetPanelElement = resultsPanel;
     } else {
-        console.error("Target results elements not found for display.");
         return;
     }
 
@@ -304,63 +315,7 @@ function displayOptimizationResults(results, goal) {
     }
 }
 
-// FUNÇÃO handleAnalyzeClick (MOVIDA PARA O INÍCIO DO ARQUIVO)
-async function handleAnalyzeClick() {
-    if (systemState.components.length === 0) {
-        alert("Bancada de trabalho vazia. Adicione componentes para analisar.");
-        return;
-    }
-    const payload = { components: systemState.components, connections: [] };
-    try {
-        const resultsMobileContent = document.getElementById('results-mobile-content');
-        const resultsMobileModal = document.getElementById('results-mobile-modal');
-        const resultsContent = document.getElementById('results-content');
-        const resultsPanel = document.getElementById('results-panel');
-
-        if (window.innerWidth <= 768 && resultsMobileContent && resultsMobileModal) {
-            resultsMobileContent.innerHTML = '<div class="loading-message">Analisando...</div>';
-            resultsMobileModal.classList.remove('hidden');
-            document.getElementById('results-mobile-title').textContent = "Resultados da Análise";
-        } else if (resultsContent && resultsPanel) {
-            resultsContent.innerHTML = '<div class="loading-message">Analisando...</div>';
-            resultsPanel.classList.remove('hidden');
-        } else {
-            alert("Analisando... Isso pode levar um momento.");
-            return;
-        }
-        
-        const response = await fetch('/analyze_system', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const results = await response.json();
-        if (results.error) {
-            throw new Error(results.error);
-        }
-        lastResults = results;
-        displayResults(results);
-    } catch (error) {
-        const errorMessage = `<div style="color: var(--cor-erro);"><strong>Erro na análise:</strong> ${error.message}</div>`;
-        const resultsMobileContent = document.getElementById('results-mobile-content');
-        const resultsMobileModal = document.getElementById('results-mobile-modal');
-        const resultsContent = document.getElementById('results-content');
-        const resultsPanel = document.getElementById('results-panel');
-
-        if (window.innerWidth <= 768 && resultsMobileContent && resultsMobileModal) {
-            resultsMobileContent.innerHTML = errorMessage;
-            resultsMobileModal.classList.remove('hidden');
-        } else if (resultsContent && resultsPanel) {
-            resultsContent.innerHTML = errorMessage;
-            resultsPanel.classList.remove('hidden');
-        } else {
-            alert(`Erro na análise: ${error.message}`);
-        }
-    }
-}
-
-// --- CÓDIGO DA BANCADA DE TRABALHO (FUNÇÕES AUXILIARES) ---
-// Estas funções auxiliares da bancada devem ser acessíveis globalmente
+// --- BANCADA DE TRABALHO ---
 function createComponent(type, x, y) {
     componentCounter++;
     const id = `comp_${componentCounter}`;
@@ -372,7 +327,7 @@ function createComponent(type, x, y) {
 }
 
 function renderWorkbench() {
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null; // Selecionado aqui
+    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
     if (!workbench) return; 
     workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
     systemState.components.forEach(comp => {
@@ -413,8 +368,7 @@ function startDrag(e) {
 }
 
 function drag(e) {
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null; // Selecionado aqui
-
+    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
     if (activeComponent && workbench) {
         e.preventDefault();
         const touch = e.type === 'touchmove' ? e.touches[0] : e;
@@ -442,7 +396,7 @@ function endDrag() {
         document.removeEventListener('mouseup', endDrag);
         document.removeEventListener('touchmove', drag);
         document.removeEventListener('touchend', endDrag);
-        setTimeout(() => renderWorkbench(), 0);
+        requestAnimationFrame(() => renderWorkbench());
     }
 }
 
@@ -450,10 +404,9 @@ function openModalForComponent(id) {
     currentEditingComponentId = id;
     const component = systemState.components.find(c => c.id === id);
     if (!component) return;
-    const modal = document.getElementById('component-modal'); // Selecionado aqui
-    const modalTitle = document.getElementById('modal-title'); // Selecionado aqui
-    const modalFields = document.getElementById('modal-fields'); // Selecionado aqui
-
+    const modal = document.getElementById('component-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalFields = document.getElementById('modal-fields');
     if (!modal || !modalTitle || !modalFields) return;
     modalTitle.textContent = `Configurar ${component.type.replace(/_/g, ' ')}`;
     let fieldsHtml = '';
@@ -494,7 +447,7 @@ function openModalForComponent(id) {
 
 function handleModalSubmit(e) {
     e.preventDefault();
-    const modalForm = document.getElementById('modal-form'); // Selecionado aqui
+    const modalForm = document.getElementById('modal-form');
     const formData = new FormData(modalForm);
     const component = systemState.components.find(c => c.id === currentEditingComponentId);
     if (component) {
@@ -502,13 +455,25 @@ function handleModalSubmit(e) {
             component.data[key] = value;
         }
     }
-    const modal = document.getElementById('component-modal'); // Selecionado aqui
+    const modal = document.getElementById('component-modal');
     modal.classList.add('hidden');
     renderWorkbench();
 }
 
+function clearWorkbench() {
+    systemState.components = [];
+    renderWorkbench();
+    const resultsPanel = document.getElementById('results-panel');
+    const resultsMobileModal = document.getElementById('results-mobile-modal');
+    const generatePdfBtn = document.getElementById('generate-pdf-btn');
+    if (resultsPanel) resultsPanel.classList.add('hidden');
+    if (resultsMobileModal) resultsMobileModal.classList.add('hidden');
+    if (generatePdfBtn) generatePdfBtn.classList.add('hidden');
+}
+
+// --- PDF ---
 async function generatePDF() {
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null; // Selecionado aqui
+    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
     if (!workbench) {
         alert("A área de trabalho não está visível para gerar o PDF.");
         return;
@@ -563,44 +528,53 @@ async function generatePDF() {
     doc.save(`relatorio-sistema-${Date.now()}.pdf`);
 }
 
+// --- CONEXÕES ENTRE POLIAS ---
 function drawConnections() {
-    const connectionCanvas = document.getElementById('connection-canvas'); // Selecionado aqui
+    const connectionCanvas = document.getElementById('connection-canvas');
     if (!connectionCanvas) return;
     connectionCanvas.innerHTML = '';
-    const p1 = systemState.components.find(c => c.type === 'polia_motora');
-    const p2 = systemState.components.find(c => c.type === 'polia_movida');
-    if (p1 && p2) {
-        const p1Div = document.getElementById(p1.id);
-        const p2Div = document.getElementById(p2.id);
-        if (!p1Div || !p2Div) return;
-        const r1 = p1Div.offsetWidth / 2;
-        const c1x = p1.x + r1;
-        const c1y = p1.y + r1;
-        const r2 = p2Div.offsetWidth / 2;
-        const c2x = p2.x + r2;
-        const c2y = p2.y + r2;
-        const dx = c2x - c1x;
-        const dy = c2y - c1y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d > r1 + r2) {
-            const angle = Math.atan2(dy, dx);
-            const alpha = Math.acos((r1 - r2) / d);
-            const t1x_upper = c1x + r1 * Math.cos(angle - alpha);
-            const t1y_upper = c1y + r1 * Math.sin(angle - alpha);
-            const t1x_lower = c1x + r1 * Math.cos(angle + alpha);
-            const t1y_lower = c1y + r1 * Math.sin(angle + alpha);
-            const t2x_upper = c2x + r2 * Math.cos(angle - alpha);
-            const t2y_upper = c2y + r2 * Math.sin(angle - alpha);
-            const t2x_lower = c2x + r2 * Math.cos(angle + alpha);
-            const t2y_lower = c2y + r2 * Math.sin(angle + alpha);
-            const pathData = `M ${t1x_upper} ${t1y_upper} L ${t2x_upper} ${t2y_upper} M ${t1x_lower} ${t1y_lower} L ${t2x_lower} ${t2y_lower}`;
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', pathData);
-            path.setAttribute('class', 'belt-line');
-            connectionCanvas.appendChild(path);
-        }
+    const p1Element = document.querySelector('.placed-component.polia_motora');
+    const p2Element = document.querySelector('.placed-component.polia_movida');
+    if (!p1Element || !p2Element) return;
+    const r1 = p1Element.offsetWidth / 2;
+    const c1x = parseFloat(p1Element.style.left) + r1;
+    const c1y = parseFloat(p1Element.style.top) + r1;
+    const r2 = p2Element.offsetWidth / 2;
+    const c2x = parseFloat(p2Element.style.left) + r2;
+    const c2y = parseFloat(p2Element.style.top) + r2;
+    const dx = c2x - c1x;
+    const dy = c2y - c1y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d > r1 + r2) {
+        const angle = Math.atan2(dy, dx);
+        const alpha = Math.acos((r1 - r2) / d);
+        const t1x_upper = c1x + r1 * Math.cos(angle - alpha);
+        const t1y_upper = c1y + r1 * Math.sin(angle - alpha);
+        const t1x_lower = c1x + r1 * Math.cos(angle + alpha);
+        const t1y_lower = c1y + r1 * Math.sin(angle + alpha);
+        const t2x_upper = c2x + r2 * Math.cos(angle - alpha);
+        const t2y_upper = c2y + r2 * Math.sin(angle - alpha);
+        const t2x_lower = c2x + r2 * Math.cos(angle + alpha);
+        const t2y_lower = c2y + r2 * Math.sin(angle + alpha);
+        const pathData = `M ${t1x_upper} ${t1y_upper} L ${t2x_upper} ${t2y_upper} M ${t1x_lower} ${t1y_lower} L ${t2x_lower} ${t2y_lower}`;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('class', 'belt-line');
+        connectionCanvas.appendChild(path);
     }
 }
 
-// Fim do DOMContentLoaded async function() {} block
+// --- INICIALIZAÇÃO DOS EVENTOS ---
+document.addEventListener('DOMContentLoaded', async () => {
+    // Botões e formulários
+    document.getElementById('save-project-form')?.addEventListener('submit', handleSaveProject);
+    document.getElementById('optimize-form')?.addEventListener('submit', handleOptimizeSubmit);
+    document.getElementById('analyze-btn')?.addEventListener('click', handleAnalyzeClick);
+    document.getElementById('modal-form')?.addEventListener('submit', handleModalSubmit);
+    document.getElementById('generate-pdf-btn')?.addEventListener('click', generatePDF);
+    document.getElementById('clear-workbench-btn')?.addEventListener('click', clearWorkbench);
+
+    // Inicialização
+    await initializeData();
+    renderWorkbench();
 });
