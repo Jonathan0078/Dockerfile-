@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Seletores de Elementos ---
     const componentList = document.getElementById('component-list');
     const workbench = document.getElementById('workbench-area');
-    const analyzeButton = document.getElementById('analyze-button');
-    const optimizeButton = document.getElementById('optimize-button');
-    const saveButton = document.getElementById('save-button');
-    const clearButton = document.getElementById('clear-button');
+    const analyzeButton = document.getElementById('analyze-button') || document.getElementById('desktop-analyze-btn');
+    const optimizeButton = document.getElementById('optimize-button') || document.getElementById('desktop-settings-btn');
+    const saveButton = document.getElementById('save-button') || document.getElementById('desktop-save-btn');
+    const clearButton = document.getElementById('clear-button') || document.getElementById('desktop-clear-btn');
     const projectList = document.getElementById('project-list');
     const resultsPanel = document.getElementById('results-panel');
     const resultsContent = document.getElementById('results-content');
@@ -40,12 +40,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- LÓGICA DA BIBLIOTECA ---
-    componentList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('add-btn')) {
-            const type = e.target.closest('.component-item').dataset.type;
-            createComponent(type);
-        }
-    });
+    if (componentList) {
+        componentList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('add-btn')) {
+                const type = e.target.closest('.component-item').dataset.type;
+                createComponent(type);
+            }
+        });
+    } else {
+        // Suporte para estrutura de divs (caso não haja <ul>/<li>)
+        document.querySelectorAll('.component-item .add-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const type = btn.dataset.type || btn.closest('.component-item').dataset.type;
+                createComponent(type);
+            });
+        });
+    }
 
     function createComponent(type) {
         componentCounter++;
@@ -69,8 +79,17 @@ document.addEventListener('DOMContentLoaded', function () {
             el.style.left = `${comp.x}px`;
             el.style.top = `${comp.y}px`;
             el.innerHTML = `<div class="component-label">${comp.type} #${comp.id.split('_')[1]}</div>`;
+            el.setAttribute('role', 'button');
+            el.setAttribute('tabindex', '0');
+            el.setAttribute('aria-label', `Componente ${comp.type}`);
             el.addEventListener('mousedown', startDrag);
             el.addEventListener('dblclick', () => openModalForComponent(comp.id));
+            // Acessibilidade: Enter/Space abre modal
+            el.addEventListener('keydown', (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    openModalForComponent(comp.id);
+                }
+            });
             workbench.appendChild(el);
         });
         drawConnections();
@@ -93,6 +112,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const workbenchRect = workbench.getBoundingClientRect();
         let x = e.clientX - workbenchRect.left - offsetX;
         let y = e.clientY - workbenchRect.top - offsetY;
+        // Limita dentro da bancada
+        x = Math.max(0, Math.min(workbench.offsetWidth - activeComponent.offsetWidth, x));
+        y = Math.max(0, Math.min(workbench.offsetHeight - activeComponent.offsetHeight, y));
         activeComponent.style.left = `${x}px`;
         activeComponent.style.top = `${y}px`;
         drawConnections();
@@ -109,31 +131,35 @@ document.addEventListener('DOMContentLoaded', function () {
         document.removeEventListener('mousemove', drag);
         document.removeEventListener('mouseup', endDrag);
     }
-    
+
     // --- LÓGICA DOS BOTÕES PRINCIPAIS ---
-    analyzeButton.addEventListener('click', handleAnalyzeClick);
-    clearButton.addEventListener('click', () => {
-        if(confirm('Tem certeza que deseja limpar a bancada?')) {
+    if (analyzeButton) analyzeButton.addEventListener('click', handleAnalyzeClick);
+    if (clearButton) clearButton.addEventListener('click', () => {
+        if (confirm('Tem certeza que deseja limpar a bancada?')) {
             systemState = { components: [] };
             componentCounter = 0;
             renderWorkbench();
-            resultsPanel.classList.add('hidden');
+            if (resultsPanel) resultsPanel.classList.add('hidden');
         }
     });
 
     // --- LÓGICA DE PROJETOS (SALVAR/CARREGAR) ---
-    saveButton.addEventListener('click', () => saveProjectModal.classList.remove('hidden'));
-    document.getElementById('save-cancel-btn').addEventListener('click', () => saveProjectModal.classList.add('hidden'));
-    document.getElementById('save-confirm-btn').addEventListener('click', handleSaveProject);
-    
-    projectList.addEventListener('click', (e) => {
-        if (e.target.tagName === 'LI') {
-            const projectId = e.target.dataset.projectId;
-            if (confirm('Carregar este projeto? O trabalho atual será perdido.')) {
-                loadProject(projectId);
+    if (saveButton) saveButton.addEventListener('click', () => saveProjectModal.classList.remove('hidden'));
+    const saveCancelBtn = document.getElementById('save-cancel-btn') || document.getElementById('save-modal-close-btn');
+    if (saveCancelBtn) saveCancelBtn.addEventListener('click', () => saveProjectModal.classList.add('hidden'));
+    const saveConfirmBtn = document.getElementById('save-confirm-btn');
+    if (saveConfirmBtn) saveConfirmBtn.addEventListener('click', handleSaveProject);
+
+    if (projectList) {
+        projectList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI' && e.target.dataset.projectId) {
+                const projectId = e.target.dataset.projectId;
+                if (confirm('Carregar este projeto? O trabalho atual será perdido.')) {
+                    loadProject(projectId);
+                }
             }
-        }
-    });
+        });
+    }
 
     async function fetchAndDisplayProjects() {
         try {
@@ -155,10 +181,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function handleSaveProject() {
-        const projectName = document.getElementById('project-name').value;
+    async function handleSaveProject(e) {
+        e && e.preventDefault && e.preventDefault();
+        const projectNameInput = document.getElementById('project-name');
+        const projectName = projectNameInput ? projectNameInput.value : '';
         if (!projectName.trim()) return alert('Por favor, dê um nome ao projeto.');
-        
         try {
             const response = await fetch('/save_project', {
                 method: 'POST',
@@ -184,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const ids = systemState.components.map(c => parseInt(c.id.split('_')[1]));
             componentCounter = ids.length > 0 ? Math.max(...ids) : 0;
             renderWorkbench();
-            resultsPanel.classList.add('hidden');
+            if (resultsPanel) resultsPanel.classList.add('hidden');
         } catch (error) {
             alert(`Erro ao carregar projeto: ${error.message}`);
         }
@@ -192,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- ANÁLISE E OTIMIZAÇÃO ---
     async function handleAnalyzeClick() {
-        if(systemState.components.length === 0) return alert('Adicione componentes para analisar.');
+        if (systemState.components.length === 0) return alert('Adicione componentes para analisar.');
         try {
             const response = await fetch('/analyze_system', {
                 method: 'POST',
@@ -209,49 +236,66 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function displayAnalysisResults(results) {
-        resultsContent.innerHTML = `<ul>
-            ${Object.entries(results.sistema).map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('')}
-            ${Object.entries(results.financeiro_energetico).map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('')}
-        </ul>`;
+        let html = '<ul>';
+        if (results.sistema) {
+            html += Object.entries(results.sistema).map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('');
+        }
+        if (results.financeiro_energetico) {
+            html += Object.entries(results.financeiro_energetico).map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('');
+        }
+        html += '</ul>';
+        resultsContent.innerHTML = html;
         resultsPanel.classList.remove('hidden');
-        generatePdfBtn.classList.remove('hidden');
+        if (generatePdfBtn) generatePdfBtn.classList.remove('hidden');
     }
 
     // Otimização
-    optimizeButton.addEventListener('click', () => optimizeModal.classList.remove('hidden'));
-    document.getElementById('optimize-cancel-btn').addEventListener('click', () => optimizeModal.classList.add('hidden'));
-    document.getElementById('optimize-confirm-btn').addEventListener('click', handleOptimize);
-    
-    async function handleOptimize() {
-        // Lógica de otimização aqui
+    if (optimizeButton) optimizeButton.addEventListener('click', () => optimizeModal.classList.remove('hidden'));
+    const optimizeCancelBtn = document.getElementById('optimize-cancel-btn');
+    if (optimizeCancelBtn) optimizeCancelBtn.addEventListener('click', () => optimizeModal.classList.add('hidden'));
+    const optimizeConfirmBtn = document.getElementById('optimize-confirm-btn');
+    if (optimizeConfirmBtn) optimizeConfirmBtn.addEventListener('click', handleOptimize);
+
+    async function handleOptimize(e) {
+        e && e.preventDefault && e.preventDefault();
+        // Lógica de otimização a ser implementada conforme necessidade
         optimizeModal.classList.add('hidden');
+        alert('Funcionalidade de otimização ainda não implementada.');
     }
 
     // --- MODAL DE COMPONENTES ---
-    document.getElementById('modal-close-btn').addEventListener('click', () => componentModal.classList.add('hidden'));
-    document.getElementById('modal-form').addEventListener('submit', handleModalSubmit);
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', () => componentModal.classList.add('hidden'));
+    const modalForm = document.getElementById('modal-form');
+    if (modalForm) modalForm.addEventListener('submit', handleModalSubmit);
 
     function openModalForComponent(id) {
         currentEditingComponentId = id;
         const component = systemState.components.find(c => c.id === id);
         if (!component) return;
         document.getElementById('modal-title').textContent = `Configurar ${component.type}`;
-        
         let fieldsHtml = '';
         const data = component.data;
         // Gerar campos baseados no tipo de componente
-        switch(component.type) {
+        switch (component.type) {
             case 'motor':
                 fieldsHtml = `
-                    <input name="power_kw" placeholder="Potência (kW)" value="${data.power_kw || ''}">
-                    <input name="rpm" placeholder="RPM" value="${data.rpm || ''}">`;
+                    <input name="power_kw" placeholder="Potência (kW)" value="${data.power_kw || ''}" required>
+                    <input name="rpm" placeholder="RPM" value="${data.rpm || ''}" required>`;
                 break;
             case 'polia_motora':
             case 'polia_movida':
-                fieldsHtml = `<input name="diameter" placeholder="Diâmetro (mm)" value="${data.diameter || ''}">`;
+                fieldsHtml = `<input name="diameter" placeholder="Diâmetro (mm)" value="${data.diameter || ''}" required>`;
                 break;
             case 'rolamento':
-                fieldsHtml = `<select name="modelo"><option value="">Selecione</option>${componentDatabase.rolamentos.map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('')}</select>`;
+                if (componentDatabase.rolamentos && Array.isArray(componentDatabase.rolamentos)) {
+                    fieldsHtml = `<select name="modelo" required>
+                        <option value="">Selecione</option>
+                        ${componentDatabase.rolamentos.map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('')}
+                        </select>`;
+                } else {
+                    fieldsHtml = `<input name="modelo" placeholder="Modelo do rolamento" value="${data.modelo || ''}" required>`;
+                }
                 break;
         }
         document.getElementById('modal-fields').innerHTML = fieldsHtml;
@@ -261,12 +305,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleModalSubmit(e) {
         e.preventDefault();
         const component = systemState.components.find(c => c.id === currentEditingComponentId);
-        if(component) {
+        if (component) {
             const formData = new FormData(e.target);
-            for(let [key, value] of formData.entries()) {
+            for (let [key, value] of formData.entries()) {
                 if (key === 'modelo' && component.type === 'rolamento') {
                     const rolamentoData = componentDatabase.rolamentos.find(r => r.modelo === value);
-                    if(rolamentoData) {
+                    if (rolamentoData) {
                         component.data = { ...component.data, ...rolamentoData };
                     }
                 } else {
@@ -277,10 +321,33 @@ document.addEventListener('DOMContentLoaded', function () {
         componentModal.classList.add('hidden');
         renderWorkbench();
     }
-    
+
     // --- FUNÇÕES DE DESENHO ---
     function drawConnections() {
-        // Lógica para desenhar as linhas (correias) aqui
+        // Lógica para desenhar as linhas (correias) entre componentes, se necessário.
+        // Exemplo de reset do canvas:
+        if (connectionCanvas) {
+            while (connectionCanvas.firstChild) {
+                connectionCanvas.removeChild(connectionCanvas.firstChild);
+            }
+            // Adicionar lógica de desenho aqui, caso deseje.
+        }
+    }
+
+    // --- GERAÇÃO DE PDF ---
+    if (generatePdfBtn) {
+        generatePdfBtn.addEventListener('click', async () => {
+            if (!resultsPanel) return;
+            // Usa html2canvas para capturar o painel de resultados e gerar PDF
+            const panel = resultsPanel;
+            const canvas = await html2canvas(panel, { backgroundColor: "#fff" });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF();
+            const width = pdf.internal.pageSize.getWidth();
+            const height = (canvas.height * width) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+            pdf.save('relatorio.pdf');
+        });
     }
 
     // --- Iniciar a aplicação ---
