@@ -335,6 +335,8 @@ function renderWorkbench() {
             el.style.width = `${comp.width}px`;
             el.style.height = `${comp.height}px`;
         }
+        el.setAttribute('tabindex', '0'); // <-- Aqui adicionamos tabindex para acessibilidade
+
         const label = document.createElement('div');
         label.className = 'component-label';
         label.textContent = `${comp.type.replace(/_/g, ' ')} #${comp.id.split('_')[1]}`;
@@ -554,6 +556,7 @@ async function generatePDF() {
 function drawConnections() {
     const connectionCanvas = document.getElementById('connection-canvas');
     if (!connectionCanvas) return;
+
     connectionCanvas.innerHTML = '';
 
     const p1Element = document.querySelector('.placed-component.polia_motora');
