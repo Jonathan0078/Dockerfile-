@@ -49,7 +49,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- LÓGICA DE CÁLCULO E ANÁLISE ---
-# Esta classe é essencial para as rotas de análise e otimização.
+# CLASSE CORRIGIDA COM CONVERSÃO DE TIPOS
 class AnalisadorDeSistema:
     def __init__(self, system_data):
         self.system = system_data
@@ -68,18 +68,16 @@ class AnalisadorDeSistema:
         potencia_w = potencia_kw * 1000
         velocidade_linear_ms = (math.pi * diametro_polia_mm / 1000) * (rpm_motor / 60)
         
-        # Evita divisão por zero
         if velocidade_linear_ms == 0:
             return 0
             
         forca_tangencial_n = potencia_w / velocidade_linear_ms
         
-        # Fatores K para cada tipo de correia (simplificado)
         if tipo_correia == 'V':
-            fator_correia = 1.5 # Fator para correia em V
+            fator_correia = 1.5
         elif tipo_correia == 'sincronizadora':
-            fator_correia = 1.1 # Fator para correia sincronizadora
-        else: # Tipo plana ou desconhecido
+            fator_correia = 1.1
+        else:
             fator_correia = 2.0
             
         carga_radial_n = forca_tangencial_n * fator_correia
@@ -87,14 +85,13 @@ class AnalisadorDeSistema:
 
     def _calcular_vida_util_rolamento(self, carga_dinamica_c, carga_equivalente_p, rpm, tipo):
         if carga_equivalente_p == 0:
-            return float('inf') # Vida infinita se não houver carga
+            return float('inf')
 
-        fator_vida_l = 10**6 # Ciclos (milhões de revoluções)
+        fator_vida_l = 10**6
         
-        # Expoente de vida para rolamentos de esferas (3) e rolos (10/3)
         if tipo.lower() == 'esferas':
             a = 3
-        else: # Rolos ou outros
+        else:
             a = 10/3
         
         vida_milhoes_rev = (carga_dinamica_c / carga_equivalente_p)**a
@@ -105,26 +102,30 @@ class AnalisadorDeSistema:
         if not self.motor or not self.polia_motora or not self.polia_movida or not self.rolamentos:
             raise ValueError("Dados de componentes incompletos para análise. Certifique-se de adicionar Motor, Polias e Rolamentos.")
 
+        # --- CORREÇÃO AQUI: Garante que os valores são números antes de calcular ---
+        # Todos os valores vindos do frontend são strings e precisam ser convertidos para float
+        rpm_motor = float(self.motor.get('rpm', 0))
+        diametro_polia_motora = float(self.polia_motora.get('diameter', 1))
+        diametro_polia_movida = float(self.polia_movida.get('diameter', 1))
+
         # 1. Análise de Transmissão
-        rpm_saida = (self.motor['rpm'] * self.polia_motora['diameter']) / self.polia_movida['diameter']
+        if diametro_polia_movida == 0: raise ValueError("Diâmetro da polia movida não pode ser zero.")
+        rpm_saida = (rpm_motor * diametro_polia_motora) / diametro_polia_movida
         
         # 2. Análise de Carga e Vida Útil
-        potencia_kw = float(self.motor['power_kw'])
-        rpm_motor = float(self.motor['rpm'])
-        diametro_polia_motora = float(self.polia_motora['diameter'])
+        potencia_kw = float(self.motor.get('power_kw', 0))
         tipo_correia = self.polia_motora.get('belt_type', 'V')
         
         carga_radial_n = self._calcular_carga_radial(potencia_kw, rpm_motor, diametro_polia_motora, tipo_correia)
         
         resultados_componentes = {}
         for i, rolamento in enumerate(self.rolamentos):
-            # Para simplificação, a carga equivalente P é considerada igual à carga radial
-            carga_equivalente_p = carga_radial_n / 2 # A carga é dividida entre dois rolamentos
+            carga_equivalente_p = carga_radial_n / 2
             vida_util_l10h = self._calcular_vida_util_rolamento(
-                float(rolamento['dynamic_load_c']), 
+                float(rolamento.get('dynamic_load_c', 1)), 
                 carga_equivalente_p, 
                 rpm_saida, 
-                rolamento['bearing_type']
+                rolamento.get('bearing_type', 'esferas')
             )
             resultados_componentes[f'comp_{i+1}'] = {
                 'tipo': 'Rolamento',
@@ -139,7 +140,7 @@ class AnalisadorDeSistema:
         potencia_perdida_watts = potencia_kw * 1000 * (1 - eficiencia_transmissao)
         
         horas_operacao_dia = float(self.motor.get('operating_hours', 8))
-        dias_operacao_ano = 260 # Assumindo 5 dias por semana
+        dias_operacao_ano = 260
         
         consumo_anual_kwh = (potencia_kw * horas_operacao_dia * dias_operacao_ano)
         custo_energia_kwh = float(self.motor.get('cost_per_kwh', 0.75))
@@ -147,7 +148,7 @@ class AnalisadorDeSistema:
             
         return {
             'sistema': {
-                'Relacao de Transmissao': round(self.polia_movida['diameter'] / self.polia_motora['diameter'], 2),
+                'Relacao de Transmissao': round(diametro_polia_movida / diametro_polia_motora, 2),
                 'RPM da Polia Movida': round(rpm_saida, 2),
                 'Carga Radial no Eixo (N)': round(carga_radial_n, 2),
                 'Potencia de Saida (kW)': round(potencia_saida_kw, 2),
@@ -159,7 +160,7 @@ class AnalisadorDeSistema:
                 'consumo_anual_kwh': round(consumo_anual_kwh, 2),
                 'custo_operacional_anual_brl': round(custo_operacional_anual_brl, 2)
             },
-            **resultados_componentes # Adiciona os resultados dos rolamentos
+            **resultados_componentes
         }
 
 # --- ROTAS DA APLICAÇÃO ---
