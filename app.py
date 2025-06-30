@@ -7,6 +7,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_cors import CORS # Importante para CORS se o frontend estiver em outro domínio
+
 
 # --- CONFIGURAÇÃO E CRIAÇÃO DA APP ---
 app = Flask(__name__)
@@ -14,12 +16,9 @@ app = Flask(__name__)
 # Pega a URL do banco de dados do ambiente do Render
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if not DATABASE_URL:
-    # Esta mensagem de erro é crucial para o Render
     print("FATAL: A variável de ambiente DATABASE_URL não foi encontrada. Certifique-se de configurá-la no Render.")
-    # Permite rodar localmente com SQLite se a variável não estiver presente
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///platform.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///platform.db' # Fallback para SQLite local
 else:
-    # Garante compatibilidade com o SQLAlchemy para PostgreSQL
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
@@ -31,7 +30,11 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# --- MODELOS DO BANCO DE DADOS ---
+CORS(app) # Habilita CORS para sua aplicação. Ajuste 'origins' se precisar de mais segurança.
+
+
+# --- MODELOS DO BANCO DE DADOS (NOVOS E EXISTENTES) ---
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -44,12 +47,36 @@ class Project(db.Model):
     system_state_json = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# NOVO MODELO: Tabela para Rolamentos (substitui parte do database.json)
+class Rolamento(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    modelo = db.Column(db.String(100), unique=True, nullable=False)
+    tipo = db.Column(db.String(100), nullable=False)
+    carga_c = db.Column(db.Float, nullable=False) # Carga dinâmica em Float
+
+    def to_dict(self):
+        # Método para converter o objeto Rolamento em um dicionário, útil para jsonify
+        return {
+            "modelo": self.modelo,
+            "tipo": self.tipo,
+            "carga_c": self.carga_c
+        }
+
+# NOVO MODELO: Tabela para Diâmetros Comerciais de Polias (substitui parte do database.json)
+class PoliaDiametro(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    diametro_mm = db.Column(db.Float, unique=True, nullable=False)
+
+    def to_dict(self):
+        return {"diametro_mm": self.diametro_mm}
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
 # --- LÓGICA DE CÁLCULO E ANÁLISE ---
-# CLASSE CORRIGIDA COM CONVERSÃO DE TIPOS
 class AnalisadorDeSistema:
     def __init__(self, system_data):
         self.system = system_data
@@ -102,17 +129,13 @@ class AnalisadorDeSistema:
         if not self.motor or not self.polia_motora or not self.polia_movida or not self.rolamentos:
             raise ValueError("Dados de componentes incompletos para análise. Certifique-se de adicionar Motor, Polias e Rolamentos.")
 
-        # --- CORREÇÃO AQUI: Garante que os valores são números antes de calcular ---
-        # Todos os valores vindos do frontend são strings e precisam ser convertidos para float
         rpm_motor = float(self.motor.get('rpm', 0))
         diametro_polia_motora = float(self.polia_motora.get('diameter', 1))
         diametro_polia_movida = float(self.polia_movida.get('diameter', 1))
 
-        # 1. Análise de Transmissão
         if diametro_polia_movida == 0: raise ValueError("Diâmetro da polia movida não pode ser zero.")
         rpm_saida = (rpm_motor * diametro_polia_motora) / diametro_polia_movida
         
-        # 2. Análise de Carga e Vida Útil
         potencia_kw = float(self.motor.get('power_kw', 0))
         tipo_correia = self.polia_motora.get('belt_type', 'V')
         
@@ -128,13 +151,12 @@ class AnalisadorDeSistema:
                 rolamento.get('bearing_type', 'esferas')
             )
             resultados_componentes[f'comp_{i+1}'] = {
-                'tipo': 'Rolamento',
+                'tipo': rolamento.get('tipo', rolamento.get('bearing_type', 'N/A')), # Prioriza 'tipo' do DB, fallback 'bearing_type' do input
                 'modelo': rolamento.get('modelo', 'N/A'),
                 'carga_radial_n': round(carga_radial_n, 2),
                 'vida_util_l10h': round(vida_util_l10h, 2)
             }
             
-        # 3. Análise Financeira e Energética (Simplificada)
         eficiencia_transmissao = 0.95 if tipo_correia == 'V' else 0.98
         potencia_saida_kw = potencia_kw * eficiencia_transmissao
         potencia_perdida_watts = potencia_kw * 1000 * (1 - eficiencia_transmissao)
@@ -201,25 +223,26 @@ def logout():
 def dashboard():
     return render_template('platform.html')
 
-# --- ROTAS DA API ---
+# --- ROTAS DA API (AGORA CONSULTANDO O BANCO DE DADOS) ---
 
-# ROTA PARA CARREGAR O BANCO DE DADOS DE COMPONENTES
+# ROTA PARA CARREGAR O BANCO DE DADOS DE COMPONENTES (MODIFICADA)
 @app.route('/get_component_database')
 def get_component_database():
     try:
-        # Usa app.root_path para garantir que o caminho do arquivo é absoluto e correto
-        database_path = os.path.join(app.root_path, 'database.json')
-        with open(database_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return jsonify(data)
-    except FileNotFoundError:
-        print(f"ERRO: database.json não encontrado em {database_path}")
-        return jsonify({"error": "Arquivo do banco de dados não encontrado no servidor."}), 500
-    except json.JSONDecodeError as e:
-        print(f"ERRO: Formato inválido no database.json: {e}")
-        return jsonify({"error": "O arquivo do banco de dados está corrompido ou mal formatado."}), 500
+        # Busca rolamentos do DB
+        rolamentos_db = Rolamento.query.all()
+        rolamentos_list = [r.to_dict() for r in rolamentos_db]
+
+        # Busca diâmetros de polia do DB
+        polias_diametros_db = PoliaDiametro.query.order_by(PoliaDiametro.diametro_mm).all()
+        polias_diametros_list = [p.diametro_mm for p in polias_diametros_db]
+        
+        return jsonify({
+            "rolamentos": rolamentos_list,
+            "polias": {"diametros_comerciais_mm": polias_diametros_list}
+        })
     except Exception as e:
-        print(f"ERRO GENÉRICO ao carregar o banco de dados: {e}")
+        print(f"ERRO ao carregar o banco de dados de componentes do DB: {e}")
         return jsonify({"error": str(e)}), 500
 
 # ROTA PARA SALVAR PROJETOS
@@ -255,48 +278,137 @@ def analyze_system_route():
     try:
         return jsonify(AnalisadorDeSistema(request.get_json()).analisar())
     except Exception as e:
+        print(f"Erro na rota de análise: {e}")
         return jsonify({"error": str(e)}), 400
 
-# ROTA DE OTIMIZAÇÃO
+# ROTA DE OTIMIZAÇÃO (MODIFICADA)
 @app.route('/optimize_system', methods=['POST'])
 def optimize_system_route():
     try:
         data = request.get_json(); base_system = data['system']; goal = data['goal']
-        database_path = os.path.join(app.root_path, 'database.json')
-        with open(database_path, 'r', encoding='utf-8') as f:
-            db_file = json.load(f)
-        p_opts = db_file['polias']['diametros_comerciais_mm']; b_opts = db_file['rolamentos']; solutions = []
-        p_combos = list(itertools.product(p_opts, repeat=2)); b_combos = list(itertools.product(b_opts, repeat=2))
+        
+        # Agora busca rolamentos e diâmetros de polias do DB
+        p_opts_db = PoliaDiametro.query.order_by(PoliaDiametro.diametro_mm).all()
+        p_opts = [p.diametro_mm for p in p_opts_db] # Lista de diâmetros de polia do DB
+
+        b_opts_db = Rolamento.query.all()
+        b_opts = [b.to_dict() for b in b_opts_db] # Lista de rolamentos do DB
+
+        solutions = []
+        p_combos = list(itertools.product(p_opts, repeat=2)); 
+        b_combos = list(itertools.product(b_opts, repeat=2))
         total_combos = list(itertools.product(p_combos, b_combos))
-        for p_combo, b_combo in total_combos[:1500]: # Limita o número de combinações para performance
+        
+        # Limita o número de combinações para performance, especialmente com um DB grande
+        for p_combo, b_combo in total_combos[:1500]: 
             cs = json.loads(json.dumps(base_system))
-            if len(cs['components']) >= 5:
-                cs['components'][1]['data']['diameter'] = p_combo[0]; cs['components'][2]['data']['diameter'] = p_combo[1]
-                cs['components'][3]['data'] = {'modelo': b_combo[0]['modelo'], 'bearing_type': b_combo[0]['tipo'], 'dynamic_load_c': b_combo[0]['carga_c']}
-                cs['components'][4]['data'] = {'modelo': b_combo[1]['modelo'], 'bearing_type': b_combo[1]['tipo'], 'dynamic_load_c': b_combo[1]['carga_c']}
+            if len(cs['components']) >= 5: # Assume motor (0), polia1 (1), polia2 (2), rolamento1 (3), rolamento2 (4)
+                cs['components'][1]['data']['diameter'] = p_combo[0]
+                cs['components'][2]['data']['diameter'] = p_combo[1]
+                cs['components'][3]['data'] = {'modelo': b_combo[0]['modelo'], 'tipo': b_combo[0]['tipo'], 'carga_c': b_combo[0]['carga_c']} # Usar 'tipo' do DB
+                cs['components'][4]['data'] = {'modelo': b_combo[1]['modelo'], 'tipo': b_combo[1]['tipo'], 'carga_c': b_combo[1]['carga_c']} # Usar 'tipo' do DB
             else: continue
-            r = AnalisadorDeSistema(cs).analisar()
-            cost = r.get('financeiro_energetico', {}).get('custo_operacional_anual_brl', 0)
-            eff = float(r.get('financeiro_energetico', {}).get('eficiencia_transmissao', '0%').replace('%',''))
-            lifespans = [v['vida_util_l10h'] for k,v in r.items() if k.startswith('comp_')]; min_life = min(lifespans) if lifespans else 0
-            solutions.append({"config": f"P:{p_combo[0]}/{p_combo[1]} R:{b_combo[0]['modelo']}/{b_combo[1]['modelo']}", "cost": cost, "efficiency": eff, "min_life": min_life})
+            
+            try:
+                r = AnalisadorDeSistema(cs).analisar()
+                cost = r.get('financeiro_energetico', {}).get('custo_operacional_anual_brl', 0)
+                eff = float(r.get('financeiro_energetico', {}).get('eficiencia_transmissao', '0%').replace('%',''))
+                lifespans = [v['vida_util_l10h'] for k,v in r.items() if k.startswith('comp_')]; min_life = min(lifespans) if lifespans else 0
+                solutions.append({"config": f"P:{p_combo[0]}/{p_combo[1]} R:{b_combo[0]['modelo']}/{b_combo[1]['modelo']}", "cost": cost, "efficiency": eff, "min_life": min_life})
+            except ValueError as ve:
+                print(f"Erro de validação na simulação de otimização: {ve}")
+                continue 
+            except Exception as e:
+                print(f"Erro inesperado na simulação de otimização: {e}")
+                continue
+
         if goal == 'cost': solutions.sort(key=lambda x: x['cost'])
         elif goal == 'life': solutions.sort(key=lambda x: x['min_life'], reverse=True)
         elif goal == 'efficiency': solutions.sort(key=lambda x: x['efficiency'], reverse=True)
         return jsonify(solutions[:5])
-    except Exception as e: return jsonify({"error": str(e)}), 400
+    except Exception as e: 
+        print(f"ERRO na rota de otimização: {e}")
+        return jsonify({"error": str(e)}), 400
+
+
+# --- FASE 2: COMANDO PARA POPULAR O BANCO DE DADOS (PARA EXECUTAR UMA VEZ) ---
+# Você vai executar este comando APÓS implantar o app.py no Render pela primeira vez
+# e após o Render ter criado as tabelas no PostgreSQL.
+@app.cli.command("populate-db")
+def populate_db_command():
+    """Popula o banco de dados com dados iniciais do database.json."""
+    with app.app_context():
+        print("Iniciando população do banco de dados com rolamentos e polias...")
+        
+        # Verifica se já existem rolamentos para evitar duplicatas em execuções futuras
+        if Rolamento.query.first():
+            print("Rolamentos já existem no banco de dados. Pulando população para evitar duplicatas.")
+            # Você pode adicionar um prompt para confirmar se quer limpar e repopular
+            # response = input("Rolamentos já existem. Deseja limpar e repopular? (sim/nao): ")
+            # if response.lower() == 'sim':
+            #     db.session.query(Rolamento).delete()
+            #     db.session.query(PoliaDiametro).delete()
+            #     db.session.commit()
+            #     print("Tabelas limpas. Repopulando...")
+            # else:
+            #     return
+
+        if PoliaDiametro.query.first():
+            print("Diâmetros de polias já existem. Pulando população para evitar duplicatas.")
+            return # Sai se os dados já estão lá
+
+        try:
+            # Caminho para o seu database.json
+            database_path = os.path.join(app.root_path, 'database.json')
+            with open(database_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            # Popula Rolamentos
+            rolamentos_data = data.get('rolamentos', [])
+            for r_data in rolamentos_data:
+                # Verifica se o modelo já existe antes de adicionar
+                existing_rolamento = Rolamento.query.filter_by(modelo=r_data['modelo']).first()
+                if not existing_rolamento:
+                    rolamento = Rolamento(
+                        modelo=r_data['modelo'],
+                        tipo=r_data['tipo'],
+                        carga_c=r_data['carga_c']
+                    )
+                    db.session.add(rolamento)
+            print(f"Adicionados {len(rolamentos_data)} rolamentos (ou ignorados existentes).")
+
+            # Popula Diâmetros de Polias
+            polias_diametros = data.get('polias', {}).get('diametros_comerciais_mm', [])
+            for d_mm in polias_diametros:
+                # Verifica se o diâmetro já existe antes de adicionar
+                existing_diametro = PoliaDiametro.query.filter_by(diametro_mm=d_mm).first()
+                if not existing_diametro:
+                    polia_diam = PoliaDiametro(diametro_mm=d_mm)
+                    db.session.add(polia_diam)
+            print(f"Adicionados {len(polias_diametros)} diâmetros de polia (ou ignorados existentes).")
+
+            db.session.commit()
+            print("População do banco de dados concluída com sucesso.")
+
+        except FileNotFoundError:
+            print(f"ERRO: database.json não encontrado em {database_path}. Não foi possível popular o DB.")
+        except json.JSONDecodeError as e:
+            print(f"ERRO: Formato inválido no database.json: {e}. Verifique a sintaxe JSON.")
+        except Exception as e:
+            db.session.rollback()
+            print(f"ERRO inesperado durante a população do DB: {e}")
+
 
 # --- INICIALIZAÇÃO DO SERVIDOR ---
 if __name__ == '__main__':
     with app.app_context():
-        # Usa o inspetor para verificar a existência das tabelas no banco de dados.
         inspector = inspect(db.engine)
-        if not inspector.has_table("user"):
-            print("Tabelas não encontradas, criando o esquema do banco de dados...")
+        # Verifica se a tabela 'user' (ou qualquer outra de seus modelos) já existe
+        if not inspector.has_table("user"): # Verifica uma tabela existente para decidir se cria todas
+            print("Tabelas não encontradas, criando esquema do banco de dados (User, Project, Rolamento, PoliaDiametro)...")
             db.create_all()
             print("Banco de dados e tabelas criados com sucesso.")
         else:
             print("Tabelas já existem, pulando a criação.")
     
-    # Executa o aplicativo
     app.run(debug=True)
