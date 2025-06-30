@@ -60,21 +60,12 @@ function getComponentSVG(type) {
   return "";
 }
 
-// Adiciona um componente à bancada
-function adicionarComponente(type) {
-  const comp = {
-    id: type + "_" + (systemState.components.length + 1),
-    type: type,
-    x: 60 + Math.random() * 300,
-    y: 80 + Math.random() * 180
-  };
-  systemState.components.push(comp);
-  renderWorkbench();
-}
-
+// Gera nome amigável do componente
 function labelComponent(comp) {
   if (comp.type === "polia_motora") return "Polia Motora";
   if (comp.type === "polia_movida") return "Polia Movida";
+  if (comp.type === "rolamento") return "Rolamento";
+  if (comp.type === "motor") return "Motor";
   return comp.type.charAt(0).toUpperCase() + comp.type.slice(1);
 }
 
@@ -89,11 +80,35 @@ function renderWorkbench() {
     el.style.left = `${comp.x}px`;
     el.style.top = `${comp.y}px`;
     el.style.position = "absolute";
-    el.innerHTML = getComponentSVG(comp.type) + `<div class="component-label">${labelComponent(comp)}</div>`;
+    el.innerHTML = getComponentSVG(comp.type) +
+      `<div class="component-label">${labelComponent(comp)}
+        ${renderComponentData(comp)}
+      </div>`;
     workbench.appendChild(el);
     el.addEventListener('mousedown', e => startDrag(e, comp.id));
     el.addEventListener('touchstart', e => startDrag(e, comp.id), {passive: false});
+    // Clique para editar
+    el.addEventListener('dblclick', () => abrirModalComponente(comp.type, comp));
   });
+}
+
+// Mostra dados resumidos abaixo do nome, se existirem
+function renderComponentData(comp) {
+  if (!comp.data) return "";
+  let html = "<br>";
+  if (comp.type === "motor") {
+    html += `Pot: ${comp.data.power_kw || "-"}kW<br>RPM: ${comp.data.rpm || "-"}<br>`;
+  }
+  if (comp.type === "polia_motora" || comp.type === "polia_movida") {
+    html += `Ø: ${comp.data.diameter || "-"} mm<br>`;
+    html += `Correia: ${comp.data.belt_type || "-"}<br>`;
+  }
+  if (comp.type === "rolamento") {
+    html += `Modelo: ${comp.data.modelo || "-"}<br>`;
+    html += `C: ${comp.data.carga_c || "-"}N<br>`;
+    html += `Tipo: ${comp.data.tipo || "-"}<br>`;
+  }
+  return html;
 }
 
 // Drag & drop funcional
@@ -124,7 +139,96 @@ function endDrag() {
   document.removeEventListener('touchend', endDrag);
 }
 
-// Animação de simulação
+// -------- MODAL DE COMPONENTE --------
+function abrirModalComponente(type, comp=null) {
+  const modal = document.getElementById('component-modal');
+  const fields = document.getElementById('modal-fields');
+  fields.innerHTML = '';
+  document.getElementById('modal-title').innerText = (comp ? "Editar " : "Configurar ") + labelComponent({type: type});
+  modal.dataset.type = type;
+  modal.dataset.editId = comp ? comp.id : "";
+
+  // Criação dos campos conforme o tipo
+  let data = (comp && comp.data) ? comp.data : {};
+  if (type === 'motor') {
+    fields.innerHTML += `
+      <div><label>Potência (kW): <input name="power_kw" type="number" step="0.01" required value="${data.power_kw || ""}"></label></div>
+      <div><label>RPM: <input name="rpm" type="number" required value="${data.rpm || ""}"></label></div>
+      <div><label>Horas operando/dia: <input name="operating_hours" type="number" value="${data.operating_hours || "8"}"></label></div>
+      <div><label>Custo kWh (R$): <input name="cost_per_kwh" type="number" step="0.01" value="${data.cost_per_kwh || "0.75"}"></label></div>
+    `;
+  } else if (type === 'polia_motora' || type === 'polia_movida') {
+    fields.innerHTML += `
+      <div><label>Diâmetro (mm): <input name="diameter" type="number" required value="${data.diameter || ""}"></label></div>
+      <div><label>Tipo da Correia: 
+        <select name="belt_type">
+          <option value="V" ${data.belt_type === "V" ? "selected" : ""}>V</option>
+          <option value="sincronizadora" ${data.belt_type === "sincronizadora" ? "selected" : ""}>Sincronizadora</option>
+        </select>
+      </label></div>
+    `;
+  } else if (type === 'rolamento') {
+    fields.innerHTML += `
+      <div><label>Modelo: <input name="modelo" required value="${data.modelo || ""}"></label></div>
+      <div><label>Tipo: <input name="tipo" value="${data.tipo || "esferas"}" required></label></div>
+      <div><label>Carga dinâmica C (N): <input name="carga_c" type="number" required value="${data.carga_c || ""}"></label></div>
+    `;
+  }
+  modal.classList.remove('hidden');
+}
+
+// Lida com envio do modal
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('modal-form');
+  if (form) {
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      const modal = document.getElementById('component-modal');
+      const type = modal.dataset.type;
+      const editId = modal.dataset.editId;
+      const formData = new FormData(this);
+      const data = {};
+      for (const [key, value] of formData.entries()) {
+        data[key] = value;
+      }
+      if (editId) {
+        // Editar componente existente
+        const comp = systemState.components.find(c => c.id === editId);
+        if (comp) comp.data = data;
+      } else {
+        adicionarComponente(type, data);
+      }
+      modal.classList.add('hidden');
+      modal.dataset.editId = "";
+      renderWorkbench();
+    };
+    document.getElementById('modal-close-btn').onclick = () => {
+      document.getElementById('component-modal').classList.add('hidden');
+    };
+  }
+});
+
+// Adiciona um componente à bancada
+function adicionarComponente(type, data = {}) {
+  const comp = {
+    id: type + "_" + (systemState.components.length + 1),
+    type: type,
+    x: 60 + Math.random() * 300,
+    y: 80 + Math.random() * 180,
+    data: data
+  };
+  systemState.components.push(comp);
+  renderWorkbench();
+}
+
+// Inicializa botões da biblioteca
+function setupLibraryButtons() {
+  document.querySelectorAll('.add-btn').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalComponente(btn.dataset.type));
+  });
+}
+
+// ---- SIMULAÇÃO VISUAL ----
 function startSimulation() {
   simulationActive = true;
   document.getElementById('simulate-btn').style.display = 'none';
@@ -143,7 +247,7 @@ function stopSimulation() {
 function animateComponents() {
   if (!simulationActive) return;
   const now = performance.now();
-  // Simulação básica: polias giram, motora mais rápido
+  // Simulação: polias giram, motora mais rápido
   document.querySelectorAll('.placed-component.polia_motora').forEach((el, idx) => {
     el.style.transform = `rotate(${(now/4)%360}deg)`;
     el.style.transformOrigin = '50% 50%';
@@ -152,7 +256,7 @@ function animateComponents() {
     el.style.transform = `rotate(-${(now/8)%360}deg)`;
     el.style.transformOrigin = '50% 50%';
   });
-  // Motor pode pulsar para indicar funcionamento:
+  // Motor pulsa para indicar funcionamento
   document.querySelectorAll('.placed-component.motor').forEach(el => {
     const scale = 1.0 + 0.04*Math.sin(now/120);
     el.style.transform = `scale(${scale})`;
@@ -167,13 +271,6 @@ function resetComponentTransforms() {
   });
 }
 
-// Ativa botões da biblioteca
-function setupLibraryButtons() {
-  document.querySelectorAll('.add-btn').forEach(btn => {
-    btn.addEventListener('click', () => adicionarComponente(btn.dataset.type));
-  });
-}
-
 // Eventos dos botões de simulação
 function setupSimButtons() {
   const simBtn = document.getElementById('simulate-btn');
@@ -182,9 +279,43 @@ function setupSimButtons() {
   if (stopBtn) stopBtn.onclick = stopSimulation;
 }
 
-// Inicialização
+// ---- BOTÕES PADRÃO (SALVAR, LIMPAR, ETC) ----
+function setupActionBarButtons() {
+  const clearBtn = document.getElementById('desktop-clear-btn');
+  if (clearBtn) {
+    clearBtn.onclick = function() {
+      if (confirm("Deseja realmente limpar a bancada?")) {
+        systemState.components = [];
+        renderWorkbench();
+      }
+    };
+  }
+  // Adicione aqui outros botões como salvar, otimizar, analisar etc.
+}
+
+// ---- CARREGAR DADOS DO BANCO (ROLAMENTOS, POLIAS) ----
+function loadComponentDatabase() {
+  // Recomendado: use sua API para buscar componentes do banco!
+  fetch("/get_component_database")
+    .then(resp => {
+      if (!resp.ok) throw new Error("Erro ao carregar banco de dados");
+      return resp.json();
+    })
+    .then(data => {
+      window.rolamentos = data.rolamentos || [];
+      window.polias_diametros = (data.polias && data.polias.diametros_comerciais_mm) || [];
+      // Se quiser popular selects, faça aqui!
+    })
+    .catch(err => {
+      alert("Não foi possível carregar o banco de dados de componentes. A lista de rolamentos não estará disponível.");
+    });
+}
+
+// ---- INICIALIZAÇÃO ----
 window.addEventListener('DOMContentLoaded', () => {
   setupLibraryButtons();
   setupSimButtons();
+  setupActionBarButtons();
   renderWorkbench();
+  loadComponentDatabase();
 });
