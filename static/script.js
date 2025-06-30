@@ -6,14 +6,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveButton = document.getElementById('save-button');
     const clearButton = document.getElementById('clear-button');
     const settingsButton = document.getElementById('settings-button');
-    const analyzeButton = document.getElementById('analyze-button'); // Botão de análise no cabeçalho desktop
+    // REMOVIDO: const analyzeButton = document.getElementById('analyze-button'); // Botão de análise no cabeçalho desktop
     const saveProjectModal = document.getElementById('save-project-modal');
     const saveProjectForm = document.getElementById('save-project-form');
     const saveModalCloseBtn = document.getElementById('save-modal-close-btn');
     const projectList = document.getElementById('project-list');
     const welcomeMessage = document.getElementById('welcome-message');
     const library = document.getElementById('component-library');
-    // SELETOR CORRIGIDO: Agora #workbench-area está dentro de #main-workbench novamente
     const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
     const generatePdfBtn = document.getElementById('generate-pdf-btn');
     const resultsPanel = document.getElementById('results-panel');
@@ -95,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (projectList) { /* ... */ }
-    if (analyzeButton) { analyzeButton.addEventListener('click', handleAnalyzeClick); } // Botão de análise desktop
+    // REMOVIDO: if (analyzeButton) { analyzeButton.addEventListener('click', handleAnalyzeClick); } // Botão de análise desktop
     if (analyzeButtonMobile) { analyzeButtonMobile.addEventListener('click', handleAnalyzeClick); } // Botão de análise mobile
     if (generatePdfBtn) { generatePdfBtn.addEventListener('click', generatePDF); }
     if (modalCloseBtn) { modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden')); }
@@ -241,8 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function renderWorkbench() {
-        // CORRIGIDO: workbench é selecionado no início, sem a necessidade de mainWorkbench aqui.
-        if (!workbench) return; 
+        if (!workbench) return;
         workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
         systemState.components.forEach(comp => {
             const el = document.createElement('div');
@@ -282,11 +280,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function drag(e) {
-        // CORRIGIDO: Usando workbenchRect.left/top para o cálculo correto relativo à área da bancada
         if (activeComponent && workbench) {
             e.preventDefault();
             const touch = e.type === 'touchmove' ? e.touches[0] : e;
-            const workbenchRect = workbench.getBoundingClientRect(); // Pega as dimensões da área da bancada
+            const workbenchRect = workbench.getBoundingClientRect();
             let newX = touch.clientX - workbenchRect.left - offsetX;
             let newY = touch.clientY - workbenchRect.top - offsetY;
             newX = Math.max(0, Math.min(newX, workbenchRect.width - activeComponent.offsetWidth));
@@ -335,7 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 break;
             case 'rolamento':
                 let options = (componentDatabase.rolamentos || []).map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('');
-                fieldsHtml = `<div class="input-group"><label>Selecione o Modelo</label><select id="rolamento-modelo-select" name="modelo"><option value="">-- Escolha um modelo --</option>${options}</select></div><div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" readonly value="${data.bearing_type || ''}"></div><div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required readonly value="${data.dynamic_load_c || ''}"></div>`;
+                fieldsHtml = `<div class="input-group"><label>Selecione o Modelo</label><select id="rolamento-modelo-select" name="modelo"><option value="">-- Escolha um modelo --</option>${options}</select></div><div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" value="${data.bearing_type || ''}"></div><div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}"></div>`;
                 break;
         }
         modalFields.innerHTML = fieldsHtml;
@@ -348,6 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('rolamento-tipo-input').value = rolamentoData.tipo;
                     document.getElementById('rolamento-carga-c-input').value = rolamentoData.carga_c;
                 } else {
+                    // Limpa os campos se nada for selecionado ou modelo não encontrado
                     document.getElementById('rolamento-tipo-input').value = '';
                     document.getElementById('rolamento-carga-c-input').value = '';
                 }
