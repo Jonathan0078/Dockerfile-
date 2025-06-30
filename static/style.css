@@ -1,20 +1,582 @@
 /* Importando fontes do Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
 
-/* --- VARIÁVEIS GLOBAIS --- */
+/* --- NOVO TEMA GLOBAL --- */
 :root {
-    --cor-primaria: #003366;           /* Azul escuro */
-    --cor-secundaria: #005a9c;         /* Azul médio */
-    --cor-destaque: #ffc107;            /* Amarelo vibrante */
-    --cor-fundo: #f8f9fa;              /* Cinza claro quase branco */
-    --cor-texto: #212529;              /* Preto suave */
-    --cor-sucesso: #28a745;            /* Verde */
-    --cor-erro: #dc3545;               /* Vermelho */
-    --cor-borda: #dee2e6;              /* Cinza claro para bordas */
+    --cor-primaria: #003366;   /* Azul escuro */
+    --cor-secundaria: #005a9c; /* Azul médio */
+    --cor-destaque: #ffc107;     /* Amarelo vibrante */
+    --cor-fundo: #f8f9fa;      /* Cinza claro quase branco */
+    --cor-texto: #212529;      /* Preto suave */
+    --cor-sucesso: #28a745;    /* Verde */
+    --cor-erro: #dc3545;       /* Vermelho */
+
+    /* Cores adicionais para elementos existentes, mapeando para o novo tema */
+    --cor-borda: #dee2e6; /* Um cinza claro para bordas */
+    --cor-fundo-component-item: #e9ecef; /* Fundo suave para itens de biblioteca/projetos */
+}
+
+/* --- ESTILOS GERAIS --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /* Fontes globais agora vêm de Google Fonts */
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    line-height: 1.6;
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+}
+
+/* HEADER GLOBAL (para login/register e cabeçalhos principais) */
+header {
+    /* Usando cores do novo tema */
+    background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
+    color: #ffffff;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    border-bottom: 5px solid var(--cor-destaque); /* Usando a nova cor de destaque */
+}
+
+header h1 {
+    font-family: 'Oswald', sans-serif; /* Nova fonte para títulos */
+    font-size: 2.2rem;
+}
+
+header p {
+    font-family: 'Roboto Mono', monospace; /* Nova fonte monoespaçada */
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+h2, h3 {
+    font-family: 'Oswald', sans-serif; /* Nova fonte para subtítulos */
+    color: var(--cor-primaria); /* Cor primária do novo tema */
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* --- LAYOUT PADRÃO (DESKTOP) --- */
+.platform-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+aside#component-library { /* Sidebar Esquerda: Projetos e Biblioteca */
+    padding: 1.5rem;
+    background-color: #fff;
+    border-right: 1px solid var(--cor-borda);
+    overflow-y: auto;
+    width: 300px; /* Largura fixa para desktop */
+    flex-shrink: 0; /* Impede que encolha */
+    transition: width 0.3s ease-in-out;
+}
+
+aside h2, aside h3 {
+    color: var(--cor-primaria); /* Usando a nova cor primária */
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--cor-borda); /* Nova cor de borda */
+    padding-bottom: 0.5rem;
+}
+
+.component-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--cor-fundo-component-item); /* Nova cor de fundo para itens */
+    border-radius: 8px;
+    border: 1px solid var(--cor-borda); /* Nova cor de borda */
+}
+
+.component-item span {
+    font-weight: bold;
+}
+
+.add-btn {
+    background-color: var(--cor-secundaria); /* Nova cor secundária */
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #004a8c; /* Tom mais escuro da nova cor secundária */
+}
+
+#main-workbench { /* Área Principal: Cabeçalho e Bancada */
+    flex-grow: 1; /* Ocupa o espaço restante */
+    display: flex; /* Para empilhar cabeçalho e bancada verticalmente */
+    flex-direction: column;
+    overflow: hidden; /* Garante que o conteúdo não transborde */
+}
+
+.workbench-header { /* O cabeçalho real da bancada */
+    background-color: var(--cor-primaria); /* Nova cor primária */
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+    flex-shrink: 0; /* Impede que o cabeçalho encolha */
+}
+
+/* ESTILOS DA NOVA BARRA DE AÇÕES PARA DESKTOP */
+#desktop-action-bar {
+    display: flex; /* Visível por padrão no desktop */
+    justify-content: flex-end; /* Alinha os botões à direita */
+    padding: 0.5rem 1rem;
+    background-color: var(--cor-fundo); /* Fundo claro do novo tema */
+    border-bottom: 1px solid var(--cor-borda); /* Nova cor de borda */
+    gap: 10px; /* Espaço entre os botões */
+    flex-shrink: 0;
+}
+#desktop-action-bar .btn-action,
+#desktop-action-bar .btn-action-highlight {
+    padding: 0.6rem 1.2rem; /* Tamanho ajustado para desktop */
+    font-size: 0.9rem;
+    width: auto; /* Permite que o texto defina a largura */
+    height: auto;
+    border-radius: 5px;
+}
+#desktop-action-bar .btn-action svg,
+#desktop-action-bar .btn-action-highlight svg {
+    width: 16px; /* Tamanho do ícone para desktop */
+    height: 16px;
+    margin-right: 5px; /* Espaço entre ícone e texto */
+}
+
+#workbench-area { /* A área de trabalho dos componentes */
+    flex-grow: 1; /* Ocupa o espaço restante dentro do #main-workbench */
+    background-color: #fff;
+    position: relative; /* Importante para o posicionamento de componentes */
+    overflow: hidden;
+    background-image: 
+        linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.placed-component {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background-color: var(--cor-secundaria); /* Nova cor secundária */
+    border: 2px solid var(--cor-primaria); /* Nova cor primária */
+    border-radius: 50%;
+    cursor: grab;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    transition: transform 0.1s ease-out;
+    touch-action: none;
+    user-select: none;
+    z-index: 1;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.placed-component.dragging {
+    cursor: grabbing;
+    opacity: 0.7;
+    z-index: 10;
+}
+
+.component-label {
+    position: absolute;
+    bottom: -25px;
+    font-size: 0.75rem;
+    color: var(--cor-texto); /* Nova cor de texto */
+    text-align: center;
+    width: max-content;
+}
+
+/* Tipos específicos de componentes */
+.polia_motora, .polia_movida {
+    border-radius: 50%;
+    background-color: #007bff; /* Um tom de azul do novo tema */
+}
+.motor {
+    background-color: #28a745; /* Um tom de verde do novo tema */
+    border-radius: 10px;
+}
+.rolamento {
+    background-color: #ffc107; /* Nova cor de destaque (amarelo) */
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+aside#results-panel { /* Painel de Resultados Direito */
+    width: 350px;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-left: 1px solid var(--cor-borda); /* Nova cor de borda */
+    box-shadow: -4px 0 6px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+#results-panel h2 {
+    margin-bottom: 1.5rem;
+}
+#results-content ul {
+    list-style: none;
+    margin-bottom: 1rem;
+}
+#results-content li {
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--cor-borda); /* Nova cor de borda */
+    display: flex;
+    justify-content: space-between;
+}
+#results-content li strong {
+    color: var(--cor-secundaria); /* Nova cor secundária */
+}
+.hidden {
+    display: none !important;
+}
+.weakest-link {
+    color: var(--cor-erro); /* Nova cor de erro */
+    font-weight: bold;
+    text-align: center;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    border: 2px dashed var(--cor-erro); /* Nova cor de erro */
+    border-radius: 5px;
+}
+
+/* --- ESTILOS DO MODAL --- */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.modal-content h3 {
+    margin-bottom: 1.5rem;
+    color: var(--cor-primaria); /* Nova cor primária */
+    text-align: center;
+}
+.modal-content form .input-group {
+    margin-bottom: 1rem;
+}
+.modal-content form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.modal-content form input[type="number"],
+.modal-content form input[type="text"],
+.modal-content form select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--cor-borda); /* Nova cor de borda */
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.modal-content form input:focus,
+.modal-content form select:focus {
+    outline: none;
+    border-color: var(--cor-secundaria); /* Nova cor secundária */
+    box-shadow: 0 0 5px rgba(0, 80, 150, 0.5); /* Sombra baseada na nova cor */
+}
+.modal-content form button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 1.5rem;
+    transition: background-color 0.2s, transform 0.2s;
+}
+#modal-form button[type="submit"] {
+    background-color: var(--cor-sucesso); /* Nova cor de sucesso */
+    color: white;
+    margin-right: 1rem;
+}
+#modal-form button[type="button"] {
+    background-color: var(--cor-borda); /* Nova cor de borda */
+    color: var(--cor-texto); /* Nova cor de texto */
+}
+#modal-form button:hover {
+    transform: translateY(-2px);
+}
+
+#connection-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.belt-line {
+    stroke: var(--cor-texto); /* Nova cor de texto */
+    stroke-width: 4px;
+    stroke-linecap: round;
+}
+
+.shaft-line {
+    stroke: #6c757d; /* Um cinza do novo tema */
+    stroke-width: 6px;
+    stroke-dasharray: 10 5;
+}
+
+#generate-pdf-btn {
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    color: white;
+    font-weight: bold;
+    background-color: var(--cor-secundaria); /* Nova cor secundária */
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#generate-pdf-btn:hover {
+    background-color: var(--cor-primaria); /* Nova cor primária */
+    transform: translateY(-2px);
+}
+
+.user-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--cor-fundo-component-item); /* Nova cor de fundo para itens */
+    border-radius: 8px;
+}
+
+#welcome-message {
+    font-weight: bold;
+    color: var(--cor-primaria); /* Nova cor primária */
+}
+
+.btn-logout {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cor-erro); /* Nova cor de erro */
+    padding: 0.5rem;
+}
+.btn-logout:hover {
+    color: #b02a37; /* Tom mais escuro da nova cor de erro */
+}
+
+#projects-panel {
+    margin-bottom: 2rem;
+}
+
+#project-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--cor-borda); /* Nova cor de borda */
+    border-radius: 5px;
+}
+
+#project-list li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--cor-borda); /* Nova cor de borda */
+    transition: background-color 0.2s;
+}
+
+#project-list li:hover {
+    background-color: var(--cor-fundo-component-item); /* Nova cor de fundo para itens */
+}
+
+#project-list li:last-child {
+    border-bottom: none;
+}
+
+/* ESTILOS PARA PÁGINAS DE AUTENTICAÇÃO */
+.auth-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: var(--cor-fundo); /* Nova cor de fundo */
+}
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2.5rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    text-align: center;
+}
+.auth-container h2 {
+    color: var(--cor-primaria); /* Nova cor primária */
+    margin-bottom: 2rem;
+}
+.auth-container .input-group {
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+.auth-container .btn {
+    width: 100%;
+    padding: 0.8rem;
+}
+.auth-switch {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+}
+.flash-message {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    background-color: #d4edda; /* Pode ser ajustado para um tom de sucesso do novo tema */
+    color: var(--cor-sucesso);
+    border: 1px solid var(--cor-sucesso);
+}
+.flash-message.error {
+    background-color: #f8d7da; /* Pode ser ajustado para um tom de erro do novo tema */
+    color: var(--cor-erro);
+    border: 1px solid var(--cor-erro);
+}
+
+/* BARRA DE AÇÃO MOBILE (Escondida no desktop, visível no mobile) */
+#mobile-action-bar {
+    display: none; /* Escondido por padrão no desktop */
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 60px; /* Altura padrão para desktop, será sobrescrita no mobile */
+    background-color: var(--cor-primaria); /* Nova cor primária */
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 500;
+    gap: 15px; /* Espaço entre os botões */
+}
+#mobile-action-bar .btn {
+    width: 50px; /* Largura padrão para desktop, será sobrescrita no mobile */
+    height: 50px; /* Altura padrão para desktop, será sobrescrita no mobile */
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    background-color: var(--cor-secundaria); /* Nova cor secundária */
+    border: 2px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+#mobile-action-bar .btn:hover {
+    transform: scale(1.1);
+}
+.btn-action {
+    background-color: #fff !important;
+    border: 1px solid var(--cor-borda) !important; /* Nova cor de borda */
+    color: var(--cor-primaria) !important; /* Nova cor primária */
+}
+.btn-action-highlight {
+    background-color: var(--cor-secundaria) !important; /* Nova cor secundária */
+    color: white !important;
+}
+
+
+/* ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS */
+@media (max-width: 768px) {
+    .platform-container {
+        flex-direction: column; /* Empilha os elementos verticalmente */
+        height: auto; /* Permite que o conteúdo determine a altura */
+        min-height: 100vh; /* Garante que ocupe a altura total da tela */
+    }
+
+    aside#component-library { /* A barra lateral (projetos/biblioteca) */
+        width: 100%; /* Ocupa toda a largura */
+        border-right: none; /* Remove borda lateral */
+        border-bottom: 1px solid var(--cor-borda); /* Adiciona borda inferior */
+        order: 2; /* Aparece em segundo (após o cabeçalho) */
+        padding-bottom: 70px; /* Espaço para a barra de ação fixa no rodapé */
+    }
+
+    #main-workbench { /* A área principal da bancada (cabeçalho + bancada) */
+        width: 100%; /* Ocupa toda a largura */
+        order: 1; /* Aparece primeiro */
+        flex-grow: 1; /* Permite que cresça e ocupe espaço disponível */
+    }
+    
+    #main-workbench header.workbench-header {
+        /* O cabeçalho fica no topo do main-workbench */
+        width: 100%;
+    }
+
+    #workbench-area { /* A área de trabalho dos componentes (dentro do main-workbench) */
+        flex-grow: 1; /* Permite que ocupe o espaço restante dentro do main-workbench */
+        min-height: 40vh; /* Altura mínima para ser visível */
+        overflow: hidden; /* Garante que o conteúdo não transborde */
+    }
+
+    aside#results-panel { /* O painel de resultados da direita */
+        display: none; /* Esconde o painel de resultados em telas pequenas */
+/* Importando fontes do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
+
+/* --- NOVO TEMA GLOBAL --- */
+:root {
+    --cor-primaria: #003366;   /* Azul escuro */
+    --cor-secundaria: #005a9c; /* Azul médio */
+    --cor-destaque: #ffc107;   /* Amarelo vibrante */
+    --cor-fundo: #f8f9fa;      /* Cinza claro quase branco */
+    --cor-texto: #212529;      /* Preto suave */
+    --cor-sucesso: #28a745;    /* Verde */
+    --cor-erro: #dc3545;       /* Vermelho */
+
+    /* Cores adicionais para elementos existentes */
+    --cor-borda: #dee2e6; /* Cinza claro para bordas */
     --cor-fundo-component-item: #e9ecef; /* Fundo suave para itens */
 }
 
-/* --- RESET E ESTILOS GLOBAIS --- */
+/* --- ESTILOS GERAIS --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -26,13 +588,11 @@ body {
     line-height: 1.6;
     background-color: var(--cor-fundo);
     color: var(--cor-texto);
-    min-height: 100vh;
 }
 
-/* --- HEADER --- */
 header {
     background: linear-gradient(90deg, var(--cor-primaria), var(--cor-secundaria));
-    color: #fff;
+    color: #ffffff;
     padding: 1.5rem 1rem;
     text-align: center;
     border-bottom: 5px solid var(--cor-destaque);
@@ -45,11 +605,10 @@ header h1 {
 
 header p {
     font-family: 'Roboto Mono', monospace;
-    font-size: 1.1rem;
+    font-size: 1.1em;
     opacity: 0.9;
 }
 
-/* --- TÍTULOS --- */
 h2, h3 {
     font-family: 'Oswald', sans-serif;
     color: var(--cor-primaria);
@@ -57,14 +616,13 @@ h2, h3 {
     text-align: center;
 }
 
-/* --- LAYOUT PRINCIPAL --- */
+/* --- LAYOUT PADRÃO (DESKTOP) --- */
 .platform-container {
     display: flex;
     height: 100vh;
     overflow: hidden;
 }
 
-/* --- SIDEBAR ESQUERDA (BIBLIOTECA E PROJETOS) --- */
 aside#component-library {
     padding: 1.5rem;
     background-color: #fff;
@@ -116,7 +674,6 @@ aside h2, aside h3 {
     outline-offset: 2px;
 }
 
-/* --- ÁREA PRINCIPAL --- */
 #main-workbench {
     flex-grow: 1;
     display: flex;
@@ -136,7 +693,6 @@ aside h2, aside h3 {
     flex-shrink: 0;
 }
 
-/* --- BARRA DE AÇÕES DESKTOP --- */
 #desktop-action-bar {
     display: flex;
     justify-content: flex-end;
@@ -151,36 +707,18 @@ aside h2, aside h3 {
 #desktop-action-bar .btn-action-highlight {
     padding: 0.6rem 1.2rem;
     font-size: 0.9rem;
+    width: auto;
+    height: auto;
     border-radius: 5px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
 }
 
-#desktop-action-bar .btn-action {
-    background-color: #fff;
-    color: var(--cor-primaria);
-    border-color: var(--cor-borda);
+#desktop-action-bar .btn-action svg,
+#desktop-action-bar .btn-action-highlight svg {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
 }
 
-#desktop-action-bar .btn-action:hover,
-#desktop-action-bar .btn-action:focus {
-    background-color: var(--cor-fundo-component-item);
-    outline: none;
-}
-
-#desktop-action-bar .btn-action-highlight {
-    background-color: var(--cor-secundaria);
-    color: white;
-}
-
-#desktop-action-bar .btn-action-highlight:hover,
-#desktop-action-bar .btn-action-highlight:focus {
-    background-color: var(--cor-primaria);
-    outline: none;
-}
-
-/* --- ÁREA DE TRABALHO --- */
 #workbench-area {
     flex-grow: 1;
     background-color: #fff;
@@ -190,10 +728,8 @@ aside h2, aside h3 {
         linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px);
     background-size: 20px 20px;
-    outline: none;
 }
 
-/* --- COMPONENTES COLOCADOS --- */
 .placed-component {
     position: absolute;
     width: 80px;
@@ -215,6 +751,11 @@ aside h2, aside h3 {
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
+.placed-component:focus {
+    outline: 3px solid var(--cor-destaque);
+    outline-offset: 2px;
+}
+
 .placed-component.dragging {
     cursor: grabbing;
     opacity: 0.7;
@@ -228,11 +769,13 @@ aside h2, aside h3 {
     color: var(--cor-texto);
     text-align: center;
     width: max-content;
-    left: 50%;
-    transform: translateX(-50%);
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* --- TIPOS ESPECÍFICOS DE COMPONENTES --- */
+/* Tipos específicos de componentes */
 .polia_motora, .polia_movida {
     border-radius: 50%;
     background-color: #007bff;
@@ -244,13 +787,12 @@ aside h2, aside h3 {
 }
 
 .rolamento {
-    background-color: var(--cor-destaque);
+    background-color: #ffc107;
     border-radius: 50%;
     width: 40px;
     height: 40px;
 }
 
-/* --- PAINEL DE RESULTADOS --- */
 aside#results-panel {
     width: 350px;
     background-color: #fff;
@@ -269,7 +811,6 @@ aside#results-panel {
 #results-content ul {
     list-style: none;
     margin-bottom: 1rem;
-    padding-left: 0;
 }
 
 #results-content li {
@@ -297,7 +838,7 @@ aside#results-panel {
     border-radius: 5px;
 }
 
-/* --- MODAIS --- */
+/* --- ESTILOS DO MODAL --- */
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -309,6 +850,14 @@ aside#results-panel {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.modal-backdrop:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
 }
 
 .modal-content {
@@ -348,6 +897,8 @@ aside#results-panel {
     border-radius: 5px;
     font-size: 1rem;
     transition: border-color 0.2s;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
 }
 
@@ -379,13 +930,10 @@ aside#results-panel {
     color: var(--cor-texto);
 }
 
-#modal-form button:hover,
-#modal-form button:focus {
+#modal-form button:hover {
     transform: translateY(-2px);
-    outline: none;
 }
 
-/* --- SVG CONNECTION CANVAS --- */
 #connection-canvas {
     position: absolute;
     top: 0;
@@ -408,7 +956,6 @@ aside#results-panel {
     stroke-dasharray: 10 5;
 }
 
-/* --- BOTÃO GERAR PDF --- */
 #generate-pdf-btn {
     width: 100%;
     padding: 0.8rem;
@@ -423,14 +970,11 @@ aside#results-panel {
     transition: background-color 0.3s, transform 0.2s;
 }
 
-#generate-pdf-btn:hover,
-#generate-pdf-btn:focus {
+#generate-pdf-btn:hover {
     background-color: var(--cor-primaria);
     transform: translateY(-2px);
-    outline: none;
 }
 
-/* --- USER PANEL --- */
 .user-panel {
     display: flex;
     justify-content: space-between;
@@ -454,13 +998,10 @@ aside#results-panel {
     padding: 0.5rem;
 }
 
-.btn-logout:hover,
-.btn-logout:focus {
+.btn-logout:hover {
     color: #b02a37;
-    outline: none;
 }
 
-/* --- PROJETOS --- */
 #projects-panel {
     margin-bottom: 2rem;
 }
@@ -491,9 +1032,9 @@ aside#results-panel {
     border-bottom: none;
 }
 
-/* --- BARRA DE AÇÃO MOBILE --- */
+/* BARRA DE AÇÃO MOBILE */
 #mobile-action-bar {
-    display: none; /* Escondido no desktop */
+    display: none;
     justify-content: center;
     align-items: center;
     width: 100%;
@@ -528,7 +1069,6 @@ aside#results-panel {
     outline: none;
 }
 
-/* Botões de ação */
 .btn-action {
     background-color: #fff !important;
     border: 1px solid var(--cor-borda) !important;
@@ -540,7 +1080,7 @@ aside#results-panel {
     color: white !important;
 }
 
-/* --- RESPONSIVIDADE --- */
+/* ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS */
 @media (max-width: 768px) {
     .platform-container {
         flex-direction: column;
@@ -553,7 +1093,7 @@ aside#results-panel {
         border-right: none;
         border-bottom: 1px solid var(--cor-borda);
         order: 2;
-        padding-bottom: 70px; /* Espaço para barra fixa */
+        padding-bottom: 70px;
     }
 
     #main-workbench {
@@ -576,11 +1116,24 @@ aside#results-panel {
         display: none;
     }
 
-    #mobile-action-bar {
-        display: flex;
-    }
-
     #desktop-action-bar {
         display: none;
     }
+
+    #mobile-action-bar {
+        display: flex;
+        height: 80px;
+    }
+
+    #mobile-action-bar .btn {
+        width: 70px;
+        height: 70px;
+        font-size: 1.8rem;
+    }
+
+    #mobile-action-bar .btn svg {
+        width: 28px;
+        height: 28px;
+    }
 }
+
