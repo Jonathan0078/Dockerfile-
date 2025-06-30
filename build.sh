@@ -2,12 +2,7 @@
 # Exit on error
 set -o errexit
 
-echo "--- Iniciando o processo de build ---"
-
-echo "Instalando dependências..."
 pip install -r requirements.txt
 
-echo "Inicializando o banco de dados..."
-flask init-db
-
-echo "--- Build concluído com sucesso! ---"
+# Executa nosso script simples para criar o banco de dados
+python init_db.py
