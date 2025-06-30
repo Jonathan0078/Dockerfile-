@@ -2,29 +2,34 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Cadastro - Plataforma de Engenharia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Plataforma</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="auth-body">
     <div class="auth-container">
-        <h2>Criar Nova Conta</h2>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="flash-message error">{{ messages[0] }}</div>
-        {% endif %}
+        <h2>Criar Conta</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
-        <form method="POST" action="{{ url_for('register') }}">
+        <form action="{{ url_for('register') }}" method="POST">
             <div class="input-group">
-                <label for="username">Nome de Usuário</label>
+                <label for="username">Usuário</label>
                 <input type="text" id="username" name="username" required>
             </div>
             <div class="input-group">
                 <label for="password">Senha</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn btn-highlight">Cadastrar</button>
+            <button type="submit" class="btn">Cadastrar</button>
         </form>
-        <p class="auth-switch">Já tem uma conta? <a href="{{ url_for('login') }}">Faça o login</a></p>
+        <div class="auth-switch">
+            <p>Já tem uma conta? <a href="{{ url_for('login') }}">Faça o login</a></p>
+        </div>
     </div>
 </body>
 </html>
