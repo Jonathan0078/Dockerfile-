@@ -19,8 +19,7 @@
             </div>
             <div id="projects-panel">
                 <h3>Meus Projetos</h3>
-                <ul id="project-list">
-                    </ul>
+                <ul id="project-list"></ul>
             </div>
             <div id="library-panel">
                 <h3>Biblioteca</h3>
@@ -34,7 +33,7 @@
         <main id="main-workbench">
             <header class="workbench-header">
                 <h1>Bancada de Trabalho Virtual</h1>
-                </header>
+            </header>
             
             <div id="desktop-action-bar">
                 <button id="desktop-save-btn" class="btn btn-action" title="Salvar Projeto">
@@ -85,8 +84,7 @@
         <div class="modal-content">
             <h3 id="modal-title">Configurar Componente</h3>
             <form id="modal-form">
-                <div id="modal-fields">
-                    </div>
+                <div id="modal-fields"></div>
                 <button type="submit">Salvar</button>
                 <button type="button" id="modal-close-btn">Cancelar</button>
             </form>
@@ -131,6 +129,26 @@
         </button>
     </div>
 
+    <!-- O script.js busca o database.json nesta localização -->
+    <script>
+      // Exemplo de fetch já pronto para /static/database.json:
+      function loadRolamentos() {
+        fetch("{{ url_for('static', filename='database.json') }}")
+          .then(resp => {
+            if (!resp.ok) throw new Error("Erro ao carregar banco de dados");
+            return resp.json();
+          })
+          .then(data => {
+            // Aqui você preenche a lista de rolamentos ou faz o que desejar
+            // Exemplo: window.rolamentos = data.rolamentos;
+            window.rolamentos = data.rolamentos;
+          })
+          .catch(err => {
+            alert("Não foi possível carregar o banco de dados de componentes. A lista de rolamentos não estará disponível.");
+          });
+      }
+      window.onload = loadRolamentos;
+    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
