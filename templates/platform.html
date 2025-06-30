@@ -202,21 +202,86 @@
                     <input type="radio" id="goal-life" name="optimization_goal" value="life">
                     <label for="goal-life">Maximizar Vida Útil (L10h)</label>
                 </div>
-                <div class="input-group radio-group">
-                    <input type="radio" id="goal-efficiency" name="optimization_goal" value="efficiency">
-                    <label for="goal-efficiency">Maximizar Eficiência</label>
-                </div>
-                <button type="submit" class="btn btn-highlight">Otimizar Agora</button>
-                <button type="button" id="optimize-modal-close-btn" class="btn btn-secondary">Cancelar</button>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Engenharia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="platform-container">
+        <aside id="component-library">
+            <div class="user-panel">
+                <span id="welcome-message">Bem-vindo!</span>
+                <a href="{{ url_for('logout') }}" class="btn-logout" title="Sair">Sair</a>
+            </div>
+            <div id="projects-panel">
+                <h3>Meus Projetos</h3>
+                <ul id="project-list"></ul>
+            </div>
+            <div id="library-panel">
+                <h3>Biblioteca</h3>
+                <ul id="component-list" class="component-list">
+                    <li class="component-item" data-type="motor"><span>Motor</span><button class="add-btn">+</button></li>
+                    <li class="component-item" data-type="polia_motora"><span>Polia Motora</span><button class="add-btn">+</button></li>
+                    <li class="component-item" data-type="polia_movida"><span>Polia Movida</span><button class="add-btn">+</button></li>
+                    <li class="component-item" data-type="rolamento"><span>Rolamento</span><button class="add-btn">+</button></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main id="main-workbench">
+            <div class="workbench-header">
+                <button id="analyze-button" class="btn highlight">Analisar</button>
+                <button id="optimize-button" class="btn">Otimizar</button>
+                <button id="save-button" class="btn">Salvar</button>
+                <button id="clear-button" class="btn">Limpar</button>
+            </div>
+            <div id="workbench-area">
+                <svg id="connection-canvas"></svg>
+            </div>
+        </main>
+        
+        <aside id="results-panel" class="hidden">
+            <h3>Resultados da Análise</h3>
+            <div id="results-content"></div>
+            <button id="generate-pdf-btn" class="btn hidden">Gerar PDF</button>
+        </aside>
+    </div>
+
+    <div id="component-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Configurar Componente</h3>
+            <form id="modal-form">
+                <div id="modal-fields"></div>
+                <button type="submit" class="btn">Confirmar</button>
+                <button type="button" class="btn" id="modal-close-btn">Cancelar</button>
             </form>
         </div>
     </div>
-
-    <div id="mobile-action-bar">
-        <button id="analyze-button" class="btn btn-primary" title="Analisar Sistema">Analisar</button>
-        <button id="optimize-button" class="btn btn-secondary" title="Otimizar Sistema">Otimizar ⚙️</button>
-        <button id="save-button" class="btn btn-secondary" title="Salvar Projeto">Salvar</button>
-        <button id="clear-button" class="btn btn-danger" title="Limpar Bancada">Limpar</button>
+    <div id="save-project-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3>Salvar Projeto</h3>
+            <input type="text" id="project-name" placeholder="Nome do Projeto" style="width:100%; padding: 0.5rem; margin-bottom: 1rem;">
+            <button id="save-confirm-btn" class="btn">Salvar</button>
+            <button id="save-cancel-btn" class="btn">Cancelar</button>
+        </div>
+    </div>
+    <div id="optimize-modal" class="modal-backdrop hidden">
+         <div class="modal-content">
+            <h3>Otimizar Sistema</h3>
+            <select id="optimization-goal" style="width:100%; padding: 0.5rem; margin-bottom: 1rem;">
+                <option value="cost">Minimizar Custo</option>
+                <option value="life">Maximizar Vida Útil</option>
+                <option value="efficiency">Maximizar Eficiência</option>
+            </select>
+            <button id="optimize-confirm-btn" class="btn">Otimizar</button>
+            <button id="optimize-cancel-btn" class="btn">Cancelar</button>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
