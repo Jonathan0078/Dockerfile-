@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const projectList = document.getElementById('project-list');
     const welcomeMessage = document.getElementById('welcome-message');
     const library = document.getElementById('component-library');
-    const workbench = document.getElementById('workbench-area'); // AGORA SELECIONA DIRETAMENTE A ÁREA DA BANCADA
+    // SELETOR CORRIGIDO: Agora #workbench-area está dentro de #main-workbench novamente
+    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
     const generatePdfBtn = document.getElementById('generate-pdf-btn');
     const resultsPanel = document.getElementById('results-panel');
     const connectionCanvas = document.getElementById('connection-canvas');
@@ -240,7 +241,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function renderWorkbench() {
-        if (!workbench) return; // Adicionada verificação
+        // CORRIGIDO: workbench é selecionado no início, sem a necessidade de mainWorkbench aqui.
+        if (!workbench) return; 
         workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
         systemState.components.forEach(comp => {
             const el = document.createElement('div');
@@ -280,10 +282,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function drag(e) {
+        // CORRIGIDO: Usando workbenchRect.left/top para o cálculo correto relativo à área da bancada
         if (activeComponent && workbench) {
             e.preventDefault();
             const touch = e.type === 'touchmove' ? e.touches[0] : e;
-            const workbenchRect = workbench.getBoundingClientRect();
+            const workbenchRect = workbench.getBoundingClientRect(); // Pega as dimensões da área da bancada
             let newX = touch.clientX - workbenchRect.left - offsetX;
             let newY = touch.clientY - workbenchRect.top - offsetY;
             newX = Math.max(0, Math.min(newX, workbenchRect.width - activeComponent.offsetWidth));
@@ -373,8 +376,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const payload = { components: systemState.components, connections: [] };
         try {
-            resultsContent.innerHTML = '<div class="loading-message">Analisando...</div>'; // Feedback de carregamento
-            resultsPanel.classList.remove('hidden'); // Mostra o painel imediatamente
+            resultsContent.innerHTML = '<div class="loading-message">Analisando...</div>';
+            resultsPanel.classList.remove('hidden');
             
             const response = await fetch('/analyze_system', {
                 method: 'POST',
