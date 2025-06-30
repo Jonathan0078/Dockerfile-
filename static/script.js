@@ -1,51 +1,44 @@
-// Versão completa com sistema de salvamento de projetos e otimização
 const { jsPDF } = window.jspdf;
 
-// --- VARIÁVEIS DE ESTADO GLOBAL ---
+// Estado global
 let systemState = { components: [], connections: [] };
 let componentCounter = 0;
 let currentEditingComponentId = null;
 let lastResults = {};
 let componentDatabase = {};
-let activeComponent = null; 
-let offsetX = 0; 
+let activeComponent = null;
+let offsetX = 0;
 let offsetY = 0;
 
-// --- FUNÇÕES DE INICIALIZAÇÃO ---
 async function initializeData() {
     const welcomeMessage = document.getElementById('welcome-message');
     const projectList = document.getElementById('project-list');
 
     try {
         const response = await fetch('/get_component_database');
-        if (!response.ok) throw new Error('Falha na resposta do servidor para o banco de dados.');
+        if (!response.ok) throw new Error('Falha ao carregar banco de dados.');
         componentDatabase = await response.json();
         if (!componentDatabase.rolamentos) componentDatabase.rolamentos = [];
     } catch (error) {
-        alert("Não foi possível carregar o banco de dados de componentes. A lista de rolamentos não estará disponível.");
+        alert("Não foi possível carregar o banco de dados de componentes.");
         componentDatabase.rolamentos = [];
     }
-    
+
     try {
-        if (projectList) {
-            await fetchAndDisplayProjects();
-        }
+        if (projectList) await fetchAndDisplayProjects();
     } catch (error) {
-        console.error("Erro na inicialização ao carregar projetos:", error);
+        console.error("Erro ao carregar projetos:", error);
     }
 
-    if (welcomeMessage) {
-        welcomeMessage.textContent = 'Bem-vindo!';
-    }
+    if (welcomeMessage) welcomeMessage.textContent = 'Bem-vindo!';
 }
 
-// --- FUNÇÕES DE PROJETOS ---
 async function fetchAndDisplayProjects() {
     const projectList = document.getElementById('project-list');
     if (!projectList) return;
     try {
         const response = await fetch('/get_projects');
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!response.ok) throw new Error(`Erro HTTP: ${response.status}`);
         const projects = await response.json();
         projectList.innerHTML = '';
         if (projects.length === 0) {
@@ -59,7 +52,7 @@ async function fetchAndDisplayProjects() {
                 projectList.appendChild(li);
             });
         }
-    } catch (error) {
+    } catch {
         projectList.innerHTML = '<li>Erro ao carregar projetos.</li>';
     }
 }
@@ -80,7 +73,7 @@ async function handleSaveProject(e) {
         const response = await fetch('/save_project', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
         const result = await response.json();
         if (result.success) {
@@ -95,7 +88,6 @@ async function handleSaveProject(e) {
     }
 }
 
-// --- OTIMIZAÇÃO E ANÁLISE ---
 async function handleOptimizeSubmit(e) {
     e.preventDefault();
     if (systemState.components.length < 5) {
@@ -108,7 +100,7 @@ async function handleOptimizeSubmit(e) {
         return;
     }
     const goal = selectedGoalInput.value;
-    const payload = { system: systemState, goal: goal };
+    const payload = { system: systemState, goal };
 
     const resultsMobileContent = document.getElementById('results-mobile-content');
     const resultsMobileModal = document.getElementById('results-mobile-modal');
@@ -128,11 +120,11 @@ async function handleOptimizeSubmit(e) {
             alert("Otimizando... Isso pode levar um momento.");
             return;
         }
-        
+
         const response = await fetch('/optimize_system', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
         const results = await response.json();
         if (results.error) throw new Error(results.error);
@@ -175,11 +167,11 @@ async function handleAnalyzeClick() {
             alert("Analisando... Isso pode levar um momento.");
             return;
         }
-        
+
         const response = await fetch('/analyze_system', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
         const results = await response.json();
         if (results.error) throw new Error(results.error);
@@ -204,7 +196,6 @@ async function handleAnalyzeClick() {
     }
 }
 
-// --- EXIBIÇÃO DE RESULTADOS ---
 function displayResults(results) {
     let targetContentElement;
     let targetPanelElement;
@@ -230,13 +221,19 @@ function displayResults(results) {
     let html = '';
     if (results.financeiro_energetico) {
         const fin = results.financeiro_energetico;
-        html += `<h3>Análise Financeira e Energética</h3><ul><li>Eficiência da Transmissão: <strong>${fin.eficiencia_transmissao}</strong></li><li>Potência Perdida: <strong>${fin.potencia_perdida_watts} Watts</strong></li><li>Consumo Anual: <strong>${fin.consumo_anual_kwh.toLocaleString('pt-BR')} kWh</strong></li><li>Custo Anual (R$): <strong>${fin.custo_operacional_anual_brl.toLocaleString('pt-BR')}</strong></li></ul>`;
+        html += `<h3>Análise Financeira e Energética</h3><ul>
+            <li>Eficiência da Transmissão: <strong>${fin.eficiencia_transmissao}</strong></li>
+            <li>Potência Perdida: <strong>${fin.potencia_perdida_watts} Watts</strong></li>
+            <li>Consumo Anual: <strong>${fin.consumo_anual_kwh.toLocaleString('pt-BR')} kWh</strong></li>
+            <li>Custo Anual (R$): <strong>${fin.custo_operacional_anual_brl.toLocaleString('pt-BR')}</strong></li>
+        </ul>`;
     }
     html += '<h3>Resultados Técnicos</h3><ul>';
     for (const [key, value] of Object.entries(results.sistema)) {
         html += `<li>${key.replace(/_/g, ' ')}: <strong>${value}</strong></li>`;
     }
     html += '</ul>';
+
     let componentLifespans = [];
     let componentHtml = '<h3>Análise de Vida Útil</h3><ul>';
     let hasLifeData = false;
@@ -257,11 +254,8 @@ function displayResults(results) {
     targetContentElement.innerHTML = html;
     targetPanelElement.classList.remove('hidden');
     if (generatePdfBtn) {
-        if (isMobileView) {
-            generatePdfBtn.classList.add('hidden');
-        } else {
-            generatePdfBtn.classList.remove('hidden');
-        }
+        if (isMobileView) generatePdfBtn.classList.add('hidden');
+        else generatePdfBtn.classList.remove('hidden');
     }
 }
 
@@ -288,34 +282,29 @@ function displayOptimizationResults(results, goal) {
     }
 
     let html = '';
-    if (results.length === 0) {
+    if (!results || results.length === 0) {
         html += '<p>Nenhuma solução otimizada encontrada.</p>';
     } else {
         html += '<ul class="optimization-list">';
         results.forEach((sol, index) => {
-            html += `
-                <li>
-                    <strong>Solução ${index + 1}:</strong> ${sol.config}<br>
-                    Custo Anual: R$ ${sol.cost.toLocaleString('pt-BR')}<br>
-                    Eficiência: ${sol.efficiency}%<br>
-                    Vida Útil Mínima: ${sol.min_life.toLocaleString('pt-BR')} horas
-                </li>
-            `;
+            html += `<li>
+                <strong>Solução ${index + 1}:</strong> ${sol.config}<br>
+                Custo Anual: R$ ${sol.cost.toLocaleString('pt-BR')}<br>
+                Eficiência: ${sol.efficiency}%<br>
+                Vida Útil Mínima: ${sol.min_life.toLocaleString('pt-BR')} horas
+            </li>`;
         });
         html += '</ul>';
     }
     targetContentElement.innerHTML = html;
     targetPanelElement.classList.remove('hidden');
     if (generatePdfBtn) {
-        if (isMobileView) {
-            generatePdfBtn.classList.add('hidden');
-        } else {
-            generatePdfBtn.classList.remove('hidden');
-        }
+        if (isMobileView) generatePdfBtn.classList.add('hidden');
+        else generatePdfBtn.classList.remove('hidden');
     }
 }
 
-// --- BANCADA DE TRABALHO ---
+// Bancada de trabalho e componentes
 function createComponent(type, x, y) {
     componentCounter++;
     const id = `comp_${componentCounter}`;
@@ -327,26 +316,34 @@ function createComponent(type, x, y) {
 }
 
 function renderWorkbench() {
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
-    if (!workbench) return; 
+    const workbench = document.getElementById('main-workbench')?.querySelector('#workbench-area');
+    if (!workbench) return;
     workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
+
     systemState.components.forEach(comp => {
         const el = document.createElement('div');
         el.className = `placed-component ${comp.type}`;
         el.id = comp.id;
+        el.style.position = 'absolute';
         el.style.left = `${comp.x}px`;
         el.style.top = `${comp.y}px`;
         if (comp.type.includes('polia') && comp.data.diameter) {
             const scaleFactor = 0.8;
             el.style.width = `${Math.max(40, comp.data.diameter * scaleFactor)}px`;
             el.style.height = `${Math.max(40, comp.data.diameter * scaleFactor)}px`;
+        } else {
+            el.style.width = `${comp.width}px`;
+            el.style.height = `${comp.height}px`;
         }
         const label = document.createElement('div');
         label.className = 'component-label';
         label.textContent = `${comp.type.replace(/_/g, ' ')} #${comp.id.split('_')[1]}`;
         el.appendChild(label);
         workbench.appendChild(el);
-        el.addEventListener('click', (e) => { if (!el.classList.contains('dragging')) openModalForComponent(comp.id); });
+
+        el.addEventListener('click', () => {
+            if (!el.classList.contains('dragging')) openModalForComponent(comp.id);
+        });
         el.addEventListener('mousedown', startDrag);
         el.addEventListener('touchstart', startDrag, { passive: false });
     });
@@ -368,7 +365,7 @@ function startDrag(e) {
 }
 
 function drag(e) {
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
+    const workbench = document.getElementById('main-workbench')?.querySelector('#workbench-area');
     if (activeComponent && workbench) {
         e.preventDefault();
         const touch = e.type === 'touchmove' ? e.touches[0] : e;
@@ -408,29 +405,57 @@ function openModalForComponent(id) {
     const modalTitle = document.getElementById('modal-title');
     const modalFields = document.getElementById('modal-fields');
     if (!modal || !modalTitle || !modalFields) return;
+
     modalTitle.textContent = `Configurar ${component.type.replace(/_/g, ' ')}`;
     let fieldsHtml = '';
     const data = component.data;
     switch (component.type) {
         case 'motor':
-            fieldsHtml = `<div class="input-group"><label>Potência (kW)</label><input type="number" step="any" name="power_kw" required value="${data.power_kw || ''}"></div><div class="input-group"><label>Rotação (RPM)</label><input type="number" step="any" name="rpm" required value="${data.rpm || ''}"></div><hr><div class="input-group"><label>Eficiência do Motor (%)</label><input type="number" step="any" name="efficiency" value="${data.efficiency || '95'}"></div><div class="input-group"><label>Custo Energia (R$/kWh)</label><input type="number" step="any" name="cost_per_kwh" value="${data.cost_per_kwh || '0.75'}"></div><div class="input-group"><label>Horas de Operação/Dia</label><input type="number" step="any" name="operating_hours" value="${data.operating_hours || '8'}"></div>`;
+            fieldsHtml = `
+                <div class="input-group"><label>Potência (kW)</label><input type="number" step="any" name="power_kw" required value="${data.power_kw || ''}"></div>
+                <div class="input-group"><label>Rotação (RPM)</label><input type="number" step="any" name="rpm" required value="${data.rpm || ''}"></div>
+                <hr>
+                <div class="input-group"><label>Eficiência do Motor (%)</label><input type="number" step="any" name="efficiency" value="${data.efficiency || '95'}"></div>
+                <div class="input-group"><label>Custo Energia (R$/kWh)</label><input type="number" step="any" name="cost_per_kwh" value="${data.cost_per_kwh || '0.75'}"></div>
+                <div class="input-group"><label>Horas de Operação/Dia</label><input type="number" step="any" name="operating_hours" value="${data.operating_hours || '8'}"></div>
+            `;
             break;
         case 'polia_motora':
         case 'polia_movida':
             fieldsHtml = `<div class="input-group"><label>Diâmetro (mm)</label><input type="number" name="diameter" required value="${data.diameter || ''}"></div>`;
             if (component.type === 'polia_motora') {
-                fieldsHtml += `<div class="input-group"><label>Tipo de Correia</label><select name="belt_type"><option value="V" ${data.belt_type === 'V' ? 'selected' : ''}>Em V</option><option value="sincronizadora" ${data.belt_type === 'sincronizadora' ? 'selected' : ''}>Sincronizadora</option><option value="plana" ${data.belt_type === 'plana' ? 'selected' : ''}>Plana</option></select></div>`;
+                fieldsHtml += `
+                    <div class="input-group">
+                        <label>Tipo de Correia</label>
+                        <select name="belt_type">
+                            <option value="V" ${data.belt_type === 'V' ? 'selected' : ''}>Em V</option>
+                            <option value="sincronizadora" ${data.belt_type === 'sincronizadora' ? 'selected' : ''}>Sincronizadora</option>
+                            <option value="plana" ${data.belt_type === 'plana' ? 'selected' : ''}>Plana</option>
+                        </select>
+                    </div>
+                `;
             }
             break;
         case 'rolamento':
             let options = (componentDatabase.rolamentos || []).map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('');
-            fieldsHtml = `<div class="input-group"><label>Selecione o Modelo</label><select id="rolamento-modelo-select" name="modelo"><option value="">-- Escolha um modelo --</option>${options}</select></div><div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" value="${data.bearing_type || ''}"></div><div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}"></div>`;
+            fieldsHtml = `
+                <div class="input-group">
+                    <label>Selecione o Modelo</label>
+                    <select id="rolamento-modelo-select" name="modelo">
+                        <option value="">-- Escolha um modelo --</option>
+                        ${options}
+                    </select>
+                </div>
+                <div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" value="${data.bearing_type || ''}"></div>
+                <div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required value="${data.dynamic_load_c || ''}"></div>
+            `;
             break;
     }
     modalFields.innerHTML = fieldsHtml;
+
     const modeloSelect = document.getElementById('rolamento-modelo-select');
     if (modeloSelect) {
-        modeloSelect.addEventListener('change', (e) => {
+        modeloSelect.addEventListener('change', e => {
             const selectedModelo = e.target.value;
             const rolamentoData = (componentDatabase.rolamentos || []).find(r => r.modelo === selectedModelo);
             if (rolamentoData) {
@@ -455,8 +480,7 @@ function handleModalSubmit(e) {
             component.data[key] = value;
         }
     }
-    const modal = document.getElementById('component-modal');
-    modal.classList.add('hidden');
+    document.getElementById('component-modal').classList.add('hidden');
     renderWorkbench();
 }
 
@@ -471,18 +495,14 @@ function clearWorkbench() {
     if (generatePdfBtn) generatePdfBtn.classList.add('hidden');
 }
 
-// --- PDF ---
 async function generatePDF() {
-    const workbench = document.getElementById('main-workbench') ? document.getElementById('main-workbench').querySelector('#workbench-area') : null;
+    const workbench = document.getElementById('main-workbench')?.querySelector('#workbench-area');
     if (!workbench) {
         alert("A área de trabalho não está visível para gerar o PDF.");
         return;
     }
     const doc = new jsPDF();
-    const workbenchImage = await html2canvas(workbench, {
-        backgroundColor: "#ffffff",
-        scale: 2
-    });
+    const workbenchImage = await html2canvas(workbench, { backgroundColor: "#ffffff", scale: 2 });
     const imgData = workbenchImage.toDataURL('image/png');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
@@ -508,11 +528,14 @@ async function generatePDF() {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         for (const [key, value] of Object.entries(data)) {
-             let label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-             doc.text(`${label}:`, 16, currentY);
-             doc.text(String(value), 100, currentY);
-             currentY += 7;
-             if (currentY > 280) { doc.addPage(); currentY = 20; }
+            let label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            doc.text(`${label}:`, 16, currentY);
+            doc.text(String(value), 100, currentY);
+            currentY += 7;
+            if (currentY > 280) {
+                doc.addPage();
+                currentY = 20;
+            }
         }
         currentY += 5;
     }
@@ -520,31 +543,35 @@ async function generatePDF() {
     addSection('Análise Financeira e Energética', lastResults.financeiro_energetico);
     const lifeData = {};
     for (const [id, data] of Object.entries(lastResults)) {
-         if (id.startsWith('comp_') && data.tipo === 'Rolamento') {
+        if (id.startsWith('comp_') && data.tipo === 'Rolamento') {
             lifeData[`Vida Util L10h (${id})`] = `${data.vida_util_l10h.toLocaleString('pt-BR')} horas`;
-         }
+        }
     }
     addSection('Análise de Vida Útil dos Componentes', lifeData);
     doc.save(`relatorio-sistema-${Date.now()}.pdf`);
 }
 
-// --- CONEXÕES ENTRE POLIAS ---
 function drawConnections() {
     const connectionCanvas = document.getElementById('connection-canvas');
     if (!connectionCanvas) return;
     connectionCanvas.innerHTML = '';
+
     const p1Element = document.querySelector('.placed-component.polia_motora');
     const p2Element = document.querySelector('.placed-component.polia_movida');
     if (!p1Element || !p2Element) return;
+
     const r1 = p1Element.offsetWidth / 2;
     const c1x = parseFloat(p1Element.style.left) + r1;
     const c1y = parseFloat(p1Element.style.top) + r1;
+
     const r2 = p2Element.offsetWidth / 2;
     const c2x = parseFloat(p2Element.style.left) + r2;
     const c2y = parseFloat(p2Element.style.top) + r2;
+
     const dx = c2x - c1x;
     const dy = c2y - c1y;
     const d = Math.sqrt(dx * dx + dy * dy);
+
     if (d > r1 + r2) {
         const angle = Math.atan2(dy, dx);
         const alpha = Math.acos((r1 - r2) / d);
@@ -556,6 +583,7 @@ function drawConnections() {
         const t2y_upper = c2y + r2 * Math.sin(angle - alpha);
         const t2x_lower = c2x + r2 * Math.cos(angle + alpha);
         const t2y_lower = c2y + r2 * Math.sin(angle + alpha);
+
         const pathData = `M ${t1x_upper} ${t1y_upper} L ${t2x_upper} ${t2y_upper} M ${t1x_lower} ${t1y_lower} L ${t2x_lower} ${t2y_lower}`;
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', pathData);
@@ -564,17 +592,62 @@ function drawConnections() {
     }
 }
 
-// --- INICIALIZAÇÃO DOS EVENTOS ---
+// Fechar modais
+function setupModalCloseButtons() {
+    document.getElementById('save-modal-close-btn')?.addEventListener('click', () => {
+        document.getElementById('save-project-modal').classList.add('hidden');
+    });
+    document.getElementById('modal-close-btn')?.addEventListener('click', () => {
+        document.getElementById('component-modal').classList.add('hidden');
+    });
+    document.getElementById('optimize-modal-close-btn')?.addEventListener('click', () => {
+        document.getElementById('optimize-modal').classList.add('hidden');
+    });
+}
+
+// Botões adicionar componentes biblioteca
+function setupAddComponentButtons() {
+    document.querySelectorAll('.add-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const type = btn.dataset.type;
+            createComponent(type, 50, 50);
+        });
+    });
+}
+
+// Botões desktop e mobile sincronizados
+function setupActionButtons() {
+    // Desktop
+    document.getElementById('desktop-save-btn')?.addEventListener('click', () => {
+        document.getElementById('save-project-modal').classList.remove('hidden');
+    });
+    document.getElementById('desktop-clear-btn')?.addEventListener('click', clearWorkbench);
+    document.getElementById('desktop-settings-btn')?.addEventListener('click', () => {
+        document.getElementById('optimize-modal').classList.remove('hidden');
+    });
+    document.getElementById('desktop-analyze-btn')?.addEventListener('click', handleAnalyzeClick);
+
+    // Mobile
+    document.getElementById('save-button')?.addEventListener('click', () => {
+        document.getElementById('save-project-modal').classList.remove('hidden');
+    });
+    document.getElementById('clear-button')?.addEventListener('click', clearWorkbench);
+    document.getElementById('settings-button')?.addEventListener('click', () => {
+        document.getElementById('optimize-modal').classList.remove('hidden');
+    });
+    document.getElementById('analyze-button-mobile')?.addEventListener('click', handleAnalyzeClick);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-    // Botões e formulários
+    setupModalCloseButtons();
+    setupAddComponentButtons();
+    setupActionButtons();
+
     document.getElementById('save-project-form')?.addEventListener('submit', handleSaveProject);
     document.getElementById('optimize-form')?.addEventListener('submit', handleOptimizeSubmit);
-    document.getElementById('analyze-btn')?.addEventListener('click', handleAnalyzeClick);
     document.getElementById('modal-form')?.addEventListener('submit', handleModalSubmit);
     document.getElementById('generate-pdf-btn')?.addEventListener('click', generatePDF);
-    document.getElementById('clear-workbench-btn')?.addEventListener('click', clearWorkbench);
 
-    // Inicialização
     await initializeData();
     renderWorkbench();
 });
