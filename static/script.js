@@ -3,10 +3,18 @@ const { jsPDF } = window.jspdf;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // --- SELETORES DE ELEMENTOS ---
+    // Botões da barra de ação MÓVEL
     const saveButton = document.getElementById('save-button');
     const clearButton = document.getElementById('clear-button');
     const settingsButton = document.getElementById('settings-button');
-    // REMOVIDO: const analyzeButton = document.getElementById('analyze-button'); // Botão de análise no cabeçalho desktop
+    const analyzeButtonMobile = document.getElementById('analyze-button-mobile'); // Botão de análise na barra mobile
+
+    // Botões da NOVA barra de ação DESKTOP
+    const desktopSaveBtn = document.getElementById('desktop-save-btn');
+    const desktopClearBtn = document.getElementById('desktop-clear-btn');
+    const desktopSettingsBtn = document.getElementById('desktop-settings-btn');
+    const desktopAnalyzeBtn = document.getElementById('desktop-analyze-btn');
+
     const saveProjectModal = document.getElementById('save-project-modal');
     const saveProjectForm = document.getElementById('save-project-form');
     const saveModalCloseBtn = document.getElementById('save-modal-close-btn');
@@ -26,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const optimizeModal = document.getElementById('optimize-modal');
     const optimizeForm = document.getElementById('optimize-form');
     const optimizeModalCloseBtn = document.getElementById('optimize-modal-close-btn');
-    const analyzeButtonMobile = document.getElementById('analyze-button-mobile'); // Botão de análise na barra mobile
     
     // --- ESTADO DA APLICAÇÃO ---
     let systemState = { components: [], connections: [] };
@@ -69,36 +76,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    if (saveButton) {
-        saveButton.addEventListener('click', () => saveProjectModal.classList.remove('hidden'));
-    }
-    if (saveModalCloseBtn) {
-        saveModalCloseBtn.addEventListener('click', () => saveProjectModal.classList.add('hidden'));
-    }
-    if (saveProjectForm) {
-        saveProjectForm.addEventListener('submit', handleSaveProject);
-    }
-    
-    if (clearButton) {
-        clearButton.addEventListener('click', clearWorkbench);
-    }
+    // Listeners da barra de ação MÓVEL
+    if (saveButton) { saveButton.addEventListener('click', () => saveProjectModal.classList.remove('hidden')); }
+    if (clearButton) { clearButton.addEventListener('click', clearWorkbench); }
+    if (settingsButton && optimizeModal) { settingsButton.addEventListener('click', () => optimizeModal.classList.remove('hidden')); }
+    if (analyzeButtonMobile) { analyzeButtonMobile.addEventListener('click', handleAnalyzeClick); }
 
-    if (settingsButton && optimizeModal) {
-        settingsButton.addEventListener('click', () => optimizeModal.classList.remove('hidden'));
-    }
-    if (optimizeModalCloseBtn) {
-        optimizeModalCloseBtn.addEventListener('click', () => optimizeModal.classList.add('hidden'));
-    }
-    if (optimizeForm) {
-        optimizeForm.addEventListener('submit', handleOptimizeSubmit);
-    }
+    // Listeners da NOVA barra de ação DESKTOP
+    if (desktopSaveBtn) { desktopSaveBtn.addEventListener('click', () => saveProjectModal.classList.remove('hidden')); }
+    if (desktopClearBtn) { desktopClearBtn.addEventListener('click', clearWorkbench); }
+    if (desktopSettingsBtn && optimizeModal) { desktopSettingsBtn.addEventListener('click', () => optimizeModal.classList.remove('hidden')); }
+    if (desktopAnalyzeBtn) { desktopAnalyzeBtn.addEventListener('click', handleAnalyzeClick); }
 
-    if (projectList) { /* ... */ }
-    // REMOVIDO: if (analyzeButton) { analyzeButton.addEventListener('click', handleAnalyzeClick); } // Botão de análise desktop
-    if (analyzeButtonMobile) { analyzeButtonMobile.addEventListener('click', handleAnalyzeClick); } // Botão de análise mobile
-    if (generatePdfBtn) { generatePdfBtn.addEventListener('click', generatePDF); }
+    // Listeners de Modais
+    if (saveModalCloseBtn) { saveModalCloseBtn.addEventListener('click', () => saveProjectModal.classList.add('hidden')); }
+    if (optimizeModalCloseBtn) { optimizeModalCloseBtn.addEventListener('click', () => optimizeModal.classList.add('hidden')); }
     if (modalCloseBtn) { modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden')); }
+    if (saveProjectForm) { saveProjectForm.addEventListener('submit', handleSaveProject); }
+    if (optimizeForm) { optimizeForm.addEventListener('submit', handleOptimizeSubmit); }
     if (modalForm) { modalForm.addEventListener('submit', handleModalSubmit); }
+
+    // Outros Listeners
+    if (projectList) { /* ... */ }
+    if (generatePdfBtn) { generatePdfBtn.addEventListener('click', generatePDF); }
 
     // --- FUNÇÕES DE PROJETO, ANÁLISE E OTIMIZAÇÃO ---
     async function fetchAndDisplayProjects() { /* ... */
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function renderWorkbench() {
-        if (!workbench) return;
+        if (!workbench) return; 
         workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
         systemState.components.forEach(comp => {
             const el = document.createElement('div');
