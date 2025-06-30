@@ -7,38 +7,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-app = Flask(__name__)
-
-# --- CONFIGURAÇÃO DE PRODUÇÃO À PROVA DE FALHAS ---
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if not DATABASE_URL:
-    raise RuntimeError("FATAL: A variável de ambiente DATABASE_URL não foi configurada.")
-
-# Substitui 'postgres://' por 'postgresql://' se necessário, para compatibilidade
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma-chave-secreta-muito-segura-e-dificil-de-adivinhar')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-login_manager = LoginManager(app)
+# Inicializa as extensões fora da função para que possam ser importadas em outros lugares
+db = SQLAlchemy()
+login_manager = LoginManager()
 login_manager.login_view = 'login'
 
-# --- COMANDO PARA INICIALIZAR O BANCO DE DADOS ---
-@app.cli.command('init-db')
-def init_db_command():
-    """Limpa os dados existentes e cria novas tabelas."""
-    with app.app_context():
-        # A linha abaixo garante que o Render crie as tabelas no DB externo
-        db.create_all()
-    print('Banco de dados inicializado e tabelas criadas com sucesso.')
-
-
-# --- O RESTANTE DO CÓDIGO (MODELOS, ROTAS, ETC) PERMANECE O MESMO ---
-# ... (cole aqui todo o resto do seu app.py, com as classes User, Project, AnalisadorDeSistema e todas as rotas)
-# Para garantir 100% de certeza, o código completo está abaixo.
+# --- MODELOS DO BANCO DE DADOS (Tabelas) ---
+# Movidos para o topo para referência clara
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -46,43 +21,20 @@ class User(UserMixin, db.Model):
     projects = db.relationship('Project', backref='author', lazy=True, cascade="all, delete-orphan")
     def set_password(self, pw): self.password_hash = generate_password_hash(pw)
     def check_password(self, pw): return check_password_hash(self.password_hash, pw)
+
 class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_name = db.Column(db.String(150), nullable=False)
     system_state_json = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
 @login_manager.user_loader
-def load_user(user_id): return User.query.get(int(user_id))
-@app.route('/')
-def index():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
-    return render_template('login.html')
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
-    if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
-        if user is None or not user.check_password(request.form['password']):
-            flash('Usuário ou senha inválidos.'); return redirect(url_for('login'))
-        login_user(user, remember=True); return redirect(url_for('dashboard'))
-    return render_template('login.html')
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
-    if request.method == 'POST':
-        if User.query.filter_by(username=request.form['username']).first():
-            flash('Este nome de usuário já existe.'); return redirect(url_for('register'))
-        user = User(username=request.form['username']); user.set_password(request.form['password'])
-        db.session.add(user); db.session.commit()
-        flash('Cadastro realizado com sucesso! Faça o login.'); return redirect(url_for('login'))
-    return render_template('register.html')
-@app.route('/logout')
-def logout():
-    logout_user(); return redirect(url_for('index'))
-@app.route('/dashboard')
-@login_required
-def dashboard(): return render_template('platform.html')
-class AnalisadorDeSistema: # ...
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# --- A CLASSE DE ANÁLISE (Sem alterações) ---
+class AnalisadorDeSistema:
+    # (Cole aqui a classe AnalisadorDeSistema completa e sem alterações)
     def __init__(self, sistema_json): self.componentes = sistema_json['components']; self.resultados = {}
     def analisar(self):
         motor = self._find_component_by_type('motor'); polia_motora = self._find_component_by_type('polia_motora'); polia_movida = self._find_component_by_type('polia_movida'); rolamentos = self._find_components_by_type('rolamento')
@@ -105,39 +57,101 @@ class AnalisadorDeSistema: # ...
             if c['type'] == t: return c
         return None
     def _find_components_by_type(self, t): return [c for c in self.componentes if c['type'] == t]
-@app.route('/get_component_database')
-def get_component_database():
-    basedir = os.path.abspath(os.path.dirname(__file__));
-    try:
-        with open(os.path.join(basedir, 'database.json'), 'r', encoding='utf-8') as f: data = json.load(f)
-        return jsonify(data)
-    except Exception as e: return jsonify({"error": str(e)}), 500
-@app.route('/save_project', methods=['POST'])
-@login_required
-def save_project():
-    data = request.get_json(); project_name = data.get('project_name'); system_state = data.get('system_state')
-    if not project_name or not system_state: return jsonify({"error": "Dados incompletos."}), 400
-    new_project = Project(project_name=project_name, system_state_json=json.dumps(system_state), author=current_user)
-    db.session.add(new_project); db.session.commit()
-    return jsonify({"success": True, "message": "Projeto salvo com sucesso!", "project_id": new_project.id})
-@app.route('/get_projects', methods=['GET'])
-@login_required
-def get_projects():
-    projects = Project.query.filter_by(user_id=current_user.id).order_by(Project.project_name).all()
-    return jsonify([{"id": p.id, "name": p.project_name} for p in projects])
-@app.route('/load_project/<int:project_id>', methods=['GET'])
-@login_required
-def load_project(project_id):
-    project = Project.query.filter_by(id=project_id, user_id=current_user.id).first()
-    if project is None: return jsonify({"error": "Projeto não encontrado ou não autorizado."}), 404
-    return jsonify(json.loads(project.system_state_json))
-@app.route('/analyze_system', methods=['POST'])
-@login_required
-def analyze_system_route():
-    try: return jsonify(AnalisadorDeSistema(request.get_json()).analisar())
-    except Exception as e: return jsonify({"error": str(e)}), 400
-@app.route('/optimize_system', methods=['POST'])
-@login_required
-def optimize_system_route():
-    # ... (código do otimizador) ...
-    return jsonify({"message": "Funcionalidade de otimização está OK."})
+
+# --- A FÁBRICA DE APLICAÇÃO (Application Factory) ---
+def create_app():
+    app = Flask(__name__)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+
+    # Configuração do banco de dados
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not DATABASE_URL:
+        raise RuntimeError("FATAL: A variável de ambiente DATABASE_URL não foi configurada.")
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'uma-chave-secreta-muito-segura')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Inicializa as extensões com a aplicação
+    db.init_app(app)
+    login_manager.init_app(app)
+
+    # Registra as rotas (blueprints) e comandos
+    with app.app_context():
+        # Adiciona o comando de inicialização do DB
+        @app.cli.command('init-db')
+        def init_db_command():
+            db.create_all()
+            print('Banco de dados inicializado.')
+
+        # REGISTRO DAS ROTAS
+        # (Todas as nossas rotas agora são definidas dentro da fábrica)
+        @app.route('/')
+        def index():
+            if current_user.is_authenticated: return redirect(url_for('dashboard'))
+            return render_template('login.html')
+        
+        @app.route('/login', methods=['GET', 'POST'])
+        def login():
+            if current_user.is_authenticated: return redirect(url_for('dashboard'))
+            if request.method == 'POST':
+                user = User.query.filter_by(username=request.form['username']).first()
+                if user is None or not user.check_password(request.form['password']):
+                    flash('Usuário ou senha inválidos.'); return redirect(url_for('login'))
+                login_user(user, remember=True); return redirect(url_for('dashboard'))
+            return render_template('login.html')
+
+        @app.route('/register', methods=['GET', 'POST'])
+        def register():
+            if current_user.is_authenticated: return redirect(url_for('dashboard'))
+            if request.method == 'POST':
+                if User.query.filter_by(username=request.form['username']).first():
+                    flash('Este nome de usuário já existe.'); return redirect(url_for('register'))
+                user = User(username=request.form['username']); user.set_password(request.form['password'])
+                db.session.add(user); db.session.commit()
+                flash('Cadastro realizado com sucesso! Faça o login.'); return redirect(url_for('login'))
+            return render_template('register.html')
+            
+        @app.route('/logout')
+        def logout(): logout_user(); return redirect(url_for('index'))
+
+        @app.route('/dashboard')
+        @login_required
+        def dashboard(): return render_template('platform.html')
+        
+        @app.route('/get_component_database')
+        def get_component_database():
+            try:
+                with open(os.path.join(basedir, 'database.json'), 'r', encoding='utf-8') as f: data = json.load(f)
+                return jsonify(data)
+            except Exception as e: return jsonify({"error": str(e)}), 500
+
+        @app.route('/save_project', methods=['POST'])
+        @login_required
+        def save_project():
+            data = request.get_json(); project_name = data.get('project_name'); system_state = data.get('system_state')
+            if not project_name or not system_state: return jsonify({"error": "Dados incompletos."}), 400
+            new_project = Project(project_name=project_name, system_state_json=json.dumps(system_state), author=current_user)
+            db.session.add(new_project); db.session.commit()
+            return jsonify({"success": True, "project_id": new_project.id})
+
+        @app.route('/load_project/<int:project_id>', methods=['GET'])
+        @login_required
+        def load_project(project_id):
+            project = Project.query.filter_by(id=project_id, user_id=current_user.id).first()
+            if project is None: return jsonify({"error": "Projeto não encontrado"}), 404
+            return jsonify(json.loads(project.system_state_json))
+
+        @app.route('/analyze_system', methods=['POST'])
+        @login_required
+        def analyze_system_route():
+            try: return jsonify(AnalisadorDeSistema(request.get_json()).analisar())
+            except Exception as e: return jsonify({"error": str(e)}), 400
+            
+    return app
+
+# Cria a aplicação chamando a fábrica
+app = create_app()
+
