@@ -1,363 +1,288 @@
-// Versão completa e verificada - 30/06/2025
-const { jsPDF } = window.jspdf;
+document.addEventListener('DOMContentLoaded', function () {
+    const { jsPDF } = window.jspdf;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // --- 1. SELETORES DE ELEMENTOS DO DOM ---
-    const library = document.getElementById('component-library');
+    // --- Seletores de Elementos ---
+    const componentList = document.getElementById('component-list');
     const workbench = document.getElementById('workbench-area');
-    const connectionCanvas = document.getElementById('connection-canvas');
-    const resultsPanel = document.getElementById('results-panel');
-    const resultsContent = document.getElementById('results-content');
-    
-    // Botões de Ação
     const analyzeButton = document.getElementById('analyze-button');
     const optimizeButton = document.getElementById('optimize-button');
-    const clearButton = document.getElementById('clear-button');
     const saveButton = document.getElementById('save-button');
-    const generatePdfBtn = document.getElementById('generate-pdf-btn');
-
-    // Modal de Componentes
-    const modal = document.getElementById('component-modal');
-    const modalForm = document.getElementById('modal-form');
-    const modalFields = document.getElementById('modal-fields');
-    const modalTitle = document.getElementById('modal-title');
-    const modalCloseBtn = document.getElementById('modal-close-btn');
-
-    // Modal de Otimização
-    const optimizeModal = document.getElementById('optimize-modal');
-    const optimizeForm = document.getElementById('optimize-form');
-    const optimizeModalCloseBtn = document.getElementById('optimize-modal-close-btn');
-
-    // Modal para Salvar Projeto
-    const saveProjectModal = document.getElementById('save-project-modal');
-    const saveProjectForm = document.getElementById('save-project-form');
-    const saveModalCloseBtn = document.getElementById('save-modal-close-btn');
-
-    // Painel de Projetos do Usuário
+    const clearButton = document.getElementById('clear-button');
     const projectList = document.getElementById('project-list');
-    const welcomeMessage = document.getElementById('welcome-message');
+    const resultsPanel = document.getElementById('results-panel');
+    const resultsContent = document.getElementById('results-content');
+    const generatePdfBtn = document.getElementById('generate-pdf-btn');
+    const connectionCanvas = document.getElementById('connection-canvas');
 
-    // --- 2. ESTADO DA APLICAÇÃO ---
-    let systemState = { components: [], connections: [] };
+    // Modais
+    const componentModal = document.getElementById('component-modal');
+    const saveProjectModal = document.getElementById('save-project-modal');
+    const optimizeModal = document.getElementById('optimize-modal');
+
+    // --- Estado da Aplicação ---
+    let systemState = { components: [] };
     let componentCounter = 0;
-    let currentEditingComponentId = null;
     let componentDatabase = {};
-    let lastResults = {};
+    let currentEditingComponentId = null;
+    let lastResults = null;
 
-    // --- 3. INICIALIZAÇÃO ---
+    // --- INICIALIZAÇÃO ---
     async function initialize() {
         try {
-            // Buscando o banco de dados de componentes do seu GitHub
             const response = await fetch('https://raw.githubusercontent.com/Jonathan0078/Dockerfile-/main/database.json');
-            
-            if (!response.ok) {
-                throw new Error('Falha ao carregar banco de dados de componentes do GitHub.');
-            }
+            if (!response.ok) throw new Error('Falha ao carregar banco de dados de componentes.');
             componentDatabase = await response.json();
-            console.log("Banco de dados de componentes carregado com sucesso do GitHub.");
         } catch (error) {
-            console.error("Erro na inicialização ao buscar database.json:", error);
+            console.error(error);
             alert(error.message);
         }
-        
-        try {
-            // Buscando os projetos do usuário do servidor Render
-            await fetchAndDisplayProjects();
-        } catch(error) {
-            console.error("Erro ao carregar lista de projetos do servidor:", error);
-        }
+        await fetchAndDisplayProjects();
     }
 
-    // --- 4. LISTENERS DE EVENTOS ---
-    library.addEventListener('click', handleLibraryClick);
-    analyzeButton.addEventListener('click', handleAnalyzeClick);
-    optimizeButton.addEventListener('click', () => optimizeModal.classList.remove('hidden'));
-    clearButton.addEventListener('click', handleClearWorkbench);
-    saveButton.addEventListener('click', () => {
-        if (systemState.components.length === 0) {
-            alert("Não há nada na bancada para salvar.");
-            return;
+    // --- LÓGICA DA BIBLIOTECA ---
+    componentList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('add-btn')) {
+            const type = e.target.closest('.component-item').dataset.type;
+            createComponent(type);
         }
-        saveProjectModal.classList.remove('hidden');
     });
 
-    generatePdfBtn.addEventListener('click', generatePDF);
-    modalForm.addEventListener('submit', handleModalSubmit);
-    modalCloseBtn.addEventListener('click', () => modal.classList.add('hidden'));
-    
-    optimizeForm.addEventListener('submit', handleOptimizeSubmit);
-    optimizeModalCloseBtn.addEventListener('click', () => optimizeModal.classList.add('hidden'));
-    
-    saveProjectForm.addEventListener('submit', handleSaveProject);
-    saveModalCloseBtn.addEventListener('click', () => saveProjectModal.classList.add('hidden'));
-
-    projectList.addEventListener('click', handleProjectListClick);
-
-    // --- 5. FUNÇÕES DE PROJETO (SALVAR, CARREGAR, LISTAR) ---
-    async function handleProjectListClick(e) {
-        const targetLi = e.target.closest('li');
-        if (targetLi && targetLi.dataset.projectId) {
-            const projectId = targetLi.dataset.projectId;
-            const projectName = targetLi.textContent;
-            const confirmation = confirm(`Deseja carregar o projeto "${projectName}"?\n\nAVISO: O conteúdo atual da bancada será perdido.`);
-            if (confirmation) {
-                await loadProject(projectId);
-            }
-        }
-    }
-
-    async function loadProject(projectId) {
-        try {
-            const response = await fetch(`/load_project/${projectId}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Projeto não encontrado.");
-            }
-            const loadedState = await response.json();
-            
-            systemState = loadedState;
-            
-            const ids = systemState.components.map(c => parseInt(c.id.split('_')[1]));
-            componentCounter = ids.length > 0 ? Math.max(...ids) : 0;
-            
-            resultsContent.innerHTML = '';
-            resultsPanel.classList.add('hidden');
-            renderWorkbench();
-            
-            alert("Projeto carregado com sucesso!");
-
-        } catch (error) {
-            alert(`Erro ao carregar o projeto: ${error.message}`);
-        }
-    }
-
-    async function handleSaveProject(e) {
-        e.preventDefault();
-        const projectNameInput = document.getElementById('project-name');
-        const projectName = projectNameInput.value;
-        if (!projectName.trim()) {
-            alert('Por favor, dê um nome ao seu projeto.');
-            return;
-        }
-        const payload = { project_name: projectName, system_state: systemState };
-        try {
-            const response = await fetch('/save_project', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            if (result.success) {
-                alert('Projeto salvo com sucesso!');
-                saveProjectModal.classList.add('hidden');
-                projectNameInput.value = '';
-                await fetchAndDisplayProjects();
-            } else {
-                throw new Error(result.error || 'Falha ao salvar o projeto.');
-            }
-        } catch (error) {
-            alert(`Erro: ${error.message}`);
-        }
-    }
-
-    async function fetchAndDisplayProjects() {
-        try {
-            const response = await fetch('/get_projects');
-            if (!response.ok) throw new Error('Não foi possível obter a lista de projetos do servidor.');
-            const projects = await response.json();
-            projectList.innerHTML = '';
-            if (projects.length === 0) {
-                projectList.innerHTML = '<li>Nenhum projeto salvo.</li>';
-            } else {
-                projects.forEach(project => {
-                    const li = document.createElement('li');
-                    li.textContent = project.name;
-                    li.dataset.projectId = project.id;
-                    projectList.appendChild(li);
-                });
-            }
-        } catch (error) {
-            console.error(error.message);
-            projectList.innerHTML = '<li>Erro ao carregar projetos.</li>';
-        }
-    }
-
-    // --- 6. FUNÇÕES DA BANCADA E COMPONENTES ---
-    function handleClearWorkbench() {
-        const confirmation = confirm("Tem certeza que deseja limpar toda a bancada?");
-        if (confirmation) {
-            systemState = { components: [], connections: [] };
-            componentCounter = 0;
-            lastResults = {};
-            renderWorkbench();
-            resultsPanel.classList.add('hidden');
-            generatePdfBtn.classList.add('hidden');
-            resultsContent.innerHTML = '';
-        }
-    }
-
-    function handleLibraryClick(e) {
-        const addBtn = e.target.closest('.add-btn');
-        if (addBtn) {
-            const type = addBtn.dataset.type;
-            const initialX = 50 + (systemState.components.length % 5) * 40;
-            const initialY = 50 + (systemState.components.length % 5) * 40;
-            createComponent(type, initialX, initialY);
-        }
-    }
-
-    function createComponent(type, x, y) {
+    function createComponent(type) {
         componentCounter++;
         const id = `comp_${componentCounter}`;
-        const newComponent = { id, type, x, y, data: {} };
+        const newComponent = {
+            id, type,
+            x: 50 + (systemState.components.length * 20) % 200,
+            y: 50 + (systemState.components.length * 20) % 200,
+            data: {}
+        };
         systemState.components.push(newComponent);
         renderWorkbench();
-        openModalForComponent(id);
     }
 
     function renderWorkbench() {
-        workbench.innerHTML = '';
+        workbench.querySelectorAll('.placed-component').forEach(el => el.remove());
         systemState.components.forEach(comp => {
             const el = document.createElement('div');
             el.className = `placed-component ${comp.type}`;
             el.id = comp.id;
             el.style.left = `${comp.x}px`;
             el.style.top = `${comp.y}px`;
-            if (comp.type.includes('polia') && comp.data.diameter) {
-                const scaleFactor = 0.8;
-                const size = Math.max(40, parseFloat(comp.data.diameter) * scaleFactor);
-                el.style.width = `${size}px`;
-                el.style.height = `${size}px`;
-            }
-            const label = document.createElement('div');
-            label.className = 'component-label';
-            label.textContent = `${comp.type.replace(/_/g, ' ')} #${comp.id.split('_')[1]}`;
-            el.appendChild(label);
-            workbench.appendChild(el);
-            el.addEventListener('click', () => {
-                if (!el.classList.contains('dragging')) openModalForComponent(comp.id);
-            });
+            el.innerHTML = `<div class="component-label">${comp.type} #${comp.id.split('_')[1]}</div>`;
             el.addEventListener('mousedown', startDrag);
-            el.addEventListener('touchstart', startDrag, { passive: false });
+            el.addEventListener('dblclick', () => openModalForComponent(comp.id));
+            workbench.appendChild(el);
         });
         drawConnections();
     }
-    
-    // --- 7. LÓGICA DE ARRASTAR (DRAG AND DROP) ---
+
+    // --- DRAG AND DROP ---
     let activeComponent = null; let offsetX = 0; let offsetY = 0;
-    function startDrag(e) { e.preventDefault(); activeComponent = e.currentTarget; activeComponent.classList.add('dragging'); const rect = activeComponent.getBoundingClientRect(); const touch = e.type === 'touchstart' ? e.touches[0] : e; offsetX = touch.clientX - rect.left; offsetY = touch.clientY - rect.top; document.addEventListener('mousemove', drag); document.addEventListener('mouseup', endDrag); document.addEventListener('touchmove', drag, { passive: false }); document.addEventListener('touchend', endDrag); }
-    function drag(e) { if (activeComponent) { e.preventDefault(); const touch = e.type === 'touchmove' ? e.touches[0] : e; const workbenchRect = workbench.getBoundingClientRect(); let newX = touch.clientX - workbenchRect.left - offsetX; let newY = touch.clientY - workbenchRect.top - offsetY; newX = Math.max(0, Math.min(newX, workbenchRect.width - activeComponent.offsetWidth)); newY = Math.max(0, Math.min(newY, workbenchRect.height - activeComponent.offsetHeight)); activeComponent.style.left = `${newX}px`; activeComponent.style.top = `${newY}px`; drawConnections(); } }
-    function endDrag() { if (activeComponent) { const componentState = systemState.components.find(c => c.id === activeComponent.id); if (componentState) { componentState.x = parseFloat(activeComponent.style.left); componentState.y = parseFloat(activeComponent.style.top); } activeComponent.classList.remove('dragging'); activeComponent = null; document.removeEventListener('mousemove', drag); document.removeEventListener('mouseup', endDrag); document.removeEventListener('touchmove', drag); document.removeEventListener('touchend', endDrag); setTimeout(renderWorkbench, 0); } }
-
-    // --- 8. FUNÇÕES DO MODAL DE COMPONENTES ---
-    function openModalForComponent(id) { currentEditingComponentId = id; const component = systemState.components.find(c => c.id === id); if (!component) return; modalTitle.textContent = `Configurar ${component.type.replace(/_/g, ' ')}`; let fieldsHtml = ''; const data = component.data; switch (component.type) { case 'motor': fieldsHtml = `<div class="input-group"><label>Potência (kW)</label><input type="number" step="any" name="power_kw" required value="${data.power_kw || ''}"></div><div class="input-group"><label>Rotação (RPM)</label><input type="number" step="any" name="rpm" required value="${data.rpm || ''}"></div><hr><div class="input-group"><label>Eficiência do Motor (%)</label><input type="number" step="any" name="efficiency" value="${data.efficiency || '95'}"></div><div class="input-group"><label>Custo Energia (R$/kWh)</label><input type="number" step="any" name="cost_per_kwh" value="${data.cost_per_kwh || '0.75'}"></div><div class="input-group"><label>Horas de Operação/Dia</label><input type="number" step="any" name="operating_hours" value="${data.operating_hours || '8'}"></div>`; break; case 'polia_motora': case 'polia_movida': fieldsHtml = `<div class="input-group"><label>Diâmetro (mm)</label><input type="number" name="diameter" required value="${data.diameter || ''}"></div>`; if (component.type === 'polia_motora') { fieldsHtml += `<div class="input-group"><label>Tipo de Correia</label><select name="belt_type"><option value="V" ${data.belt_type === 'V' ? 'selected' : ''}>Em V</option><option value="sincronizadora" ${data.belt_type === 'sincronizadora' ? 'selected' : ''}>Sincronizadora</option><option value="plana" ${data.belt_type === 'plana' ? 'selected' : ''}>Plana</option></select></div>`; } break; case 'rolamento': let options = (componentDatabase.rolamentos || []).map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join(''); fieldsHtml = `<div class="input-group"><label>Selecione o Modelo</label><select id="rolamento-modelo-select" name="modelo"><option value="">-- Escolha um modelo --</option>${options}</select></div><div class="input-group"><label>Tipo de Rolamento</label><input type="text" id="rolamento-tipo-input" name="bearing_type" readonly value="${data.bearing_type || ''}"></div><div class="input-group"><label>Carga Dinâmica C (N)</label><input type="number" id="rolamento-carga-c-input" name="dynamic_load_c" required readonly value="${data.dynamic_load_c || ''}"></div>`; break; } modalFields.innerHTML = fieldsHtml; const modeloSelect = document.getElementById('rolamento-modelo-select'); if (modeloSelect) { modeloSelect.addEventListener('change', (e) => { const selectedModelo = e.target.value; const rolamentoData = (componentDatabase.rolamentos || []).find(r => r.modelo === selectedModelo); const tipoInput = document.getElementById('rolamento-tipo-input'); const cargaCInput = document.getElementById('rolamento-carga-c-input'); if (rolamentoData) { tipoInput.value = rolamentoData.tipo; cargaCInput.value = rolamentoData.carga_c; } else { tipoInput.value = ''; cargaCInput.value = ''; } }); } modal.classList.remove('hidden'); }
-    function handleModalSubmit(e) { e.preventDefault(); const formData = new FormData(modalForm); const component = systemState.components.find(c => c.id === currentEditingComponentId); if (component) { for (let [key, value] of formData.entries()) { component.data[key] = value; } } modal.classList.add('hidden'); renderWorkbench(); }
-
-    // --- 9. FUNÇÕES DE ANÁLISE E OTIMIZAÇÃO ---
-    async function handleAnalyzeClick() { if (systemState.components.length === 0) { alert("Bancada vazia. Adicione componentes para analisar."); return; } try { resultsContent.innerHTML = '<div class="loading-message">Analisando...</div>'; resultsPanel.classList.remove('hidden'); const response = await fetch('/analyze_system', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(systemState) }); const results = await response.json(); if (results.error) { throw new Error(results.error); } lastResults = results; displayAnalysisResults(results); generatePdfBtn.classList.remove('hidden'); } catch (error) { resultsContent.innerHTML = `<div style="color: var(--cor-erro);"><strong>Erro:</strong> ${error.message}</div>`; } }
-    async function handleOptimizeSubmit(e) { e.preventDefault(); if (systemState.components.length < 5) { alert("Para otimizar, o sistema precisa de: 1 Motor, 2 Polias e 2 Rolamentos."); return; } optimizeModal.classList.add('hidden'); resultsContent.innerHTML = '<div class="loading-message">Otimizando... Isso pode levar alguns instantes.</div>'; resultsPanel.classList.remove('hidden'); const goal = document.getElementById('optimize-form').optimization_goal.value; const payload = { system: systemState, goal: goal }; try { const response = await fetch('/optimize_system', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const solutions = await response.json(); if (solutions.error) throw new Error(solutions.error); displayOptimizationResults(solutions, goal); } catch (error) { resultsContent.innerHTML = `<div style="color: var(--cor-erro);"><strong>Erro:</strong> ${error.message}</div>`; } }
-    function displayAnalysisResults(results) { let html = ''; if (results.financeiro_energetico) { const fin = results.financeiro_energetico; html += `<h3>Análise Financeira</h3><ul><li>Eficiência: <strong>${fin.eficiencia_transmissao}</strong></li><li>Potência Perdida: <strong>${fin.potencia_perdida_watts} W</strong></li><li>Custo Anual: <strong>R$ ${fin.custo_operacional_anual_brl.toLocaleString('pt-BR')}</strong></li></ul>`; } html += '<h3>Resultados Técnicos</h3><ul>'; for (const [key, value] of Object.entries(results.sistema)) { html += `<li>${key.replace(/_/g, ' ')}: <strong>${value}</strong></li>`; } html += '</ul>'; let componentLifespans = []; let componentHtml = '<h3>Análise de Vida Útil</h3><ul>'; let hasLifeData = false; for (const [id, data] of Object.entries(results)) { if (id.startsWith('comp_') && data.tipo === 'Rolamento') { hasLifeData = true; componentHtml += `<li>Vida L10h (${id}): <strong>${data.vida_util_l10h.toLocaleString('pt-BR')} h</strong></li>`; componentLifespans.push({ id, life: data.vida_util_l10h }); } } componentHtml += '</ul>'; if (hasLifeData) { html += componentHtml; componentLifespans.sort((a, b) => a.life - b.life); const weakestLink = componentLifespans[0]; if(weakestLink) {html += `<h3 class="weakest-link">Elo Mais Fraco: ${weakestLink.id}</h3>`;} } resultsContent.innerHTML = html; }
-    function displayOptimizationResults(solutions, goal) { let goalTitle = { cost: 'Menor Custo Anual', life: 'Maior Vida Útil', efficiency: 'Maior Eficiência' }[goal]; let html = `<h2>Top 5 Soluções: ${goalTitle}</h2>`; if (solutions.length > 0) { html += '<table style="width:100%;text-align:left;border-collapse:collapse;font-size:0.8rem;"><thead><tr><th>Config.</th><th>Custo/Ano</th><th>Vida Útil (h)</th><th>Efic. (%)</th></tr></thead><tbody>'; solutions.forEach(sol => { html += `<tr><td>${sol.config}</td><td>R$ ${sol.cost.toLocaleString('pt-BR')}</td><td>${sol.min_life.toLocaleString('pt-BR')}</td><td>${sol.efficiency.toFixed(1)}</td></tr>`; }); html += '</tbody></table>'; } else { html += "<p>Nenhuma combinação válida foi encontrada para otimização.</p>"; } resultsContent.innerHTML = html; generatePdfBtn.classList.add('hidden'); }
-
-    // --- 10. FUNÇÕES DE DESENHO E PDF ---
-    function drawConnections() {
-        const svgCanvas = document.getElementById('connection-canvas');
-        svgCanvas.innerHTML = '';
-        const p1 = systemState.components.find(c => c.type === 'polia_motora');
-        const p2 = systemState.components.find(c => c.type === 'polia_movida');
-        if (p1 && p2) {
-            const p1Div = document.getElementById(p1.id);
-            const p2Div = document.getElementById(p2.id);
-            if (!p1Div || !p2Div) return;
-            const r1 = p1Div.offsetWidth / 2;
-            const c1x = p1.x + r1;
-            const c1y = p1.y + r1;
-            const r2 = p2Div.offsetWidth / 2;
-            const c2x = p2.x + r2;
-            const c2y = p2.y + r2;
-            const dx = c2x - c1x;
-            const dy = c2y - c1y;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d > r1 + r2) {
-                const angle = Math.atan2(dy, dx);
-                const alpha = Math.acos((r1 - r2) / d);
-                const t1x_upper = c1x + r1 * Math.cos(angle - alpha);
-                const t1y_upper = c1y + r1 * Math.sin(angle - alpha);
-                const t1x_lower = c1x + r1 * Math.cos(angle + alpha);
-                const t1y_lower = c1y + r1 * Math.sin(angle + alpha);
-                const t2x_upper = c2x + r2 * Math.cos(angle - alpha);
-                const t2y_upper = c2y + r2 * Math.sin(angle - alpha);
-                const t2x_lower = c2x + r2 * Math.cos(angle + alpha);
-                const t2y_lower = c2y + r2 * Math.sin(angle + alpha);
-                const pathData = `M ${t1x_upper} ${t1y_upper} L ${t2x_upper} ${t2y_upper} M ${t1x_lower} ${t1y_lower} L ${t2x_lower} ${t2y_lower}`;
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                path.setAttribute('d', pathData);
-                path.setAttribute('class', 'belt-line');
-                svgCanvas.appendChild(path);
-            }
+    function startDrag(e) {
+        activeComponent = e.target.closest('.placed-component');
+        if (!activeComponent) return;
+        e.preventDefault();
+        activeComponent.classList.add('dragging');
+        offsetX = e.clientX - activeComponent.getBoundingClientRect().left;
+        offsetY = e.clientY - activeComponent.getBoundingClientRect().top;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+    }
+    function drag(e) {
+        if (!activeComponent) return;
+        const workbenchRect = workbench.getBoundingClientRect();
+        let x = e.clientX - workbenchRect.left - offsetX;
+        let y = e.clientY - workbenchRect.top - offsetY;
+        activeComponent.style.left = `${x}px`;
+        activeComponent.style.top = `${y}px`;
+        drawConnections();
+    }
+    function endDrag() {
+        if (!activeComponent) return;
+        const componentState = systemState.components.find(c => c.id === activeComponent.id);
+        if (componentState) {
+            componentState.x = parseFloat(activeComponent.style.left);
+            componentState.y = parseFloat(activeComponent.style.top);
         }
+        activeComponent.classList.remove('dragging');
+        activeComponent = null;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', endDrag);
     }
     
-    async function generatePDF() {
-        resultsPanel.classList.remove('hidden'); // Garante que o painel de resultados esteja visível
-        const doc = new jsPDF();
-        const workbenchImage = await html2canvas(document.getElementById('workbench-area'), { backgroundColor: "#ffffff", scale: 2 });
-        const imgData = workbenchImage.toDataURL('image/png');
+    // --- LÓGICA DOS BOTÕES PRINCIPAIS ---
+    analyzeButton.addEventListener('click', handleAnalyzeClick);
+    clearButton.addEventListener('click', () => {
+        if(confirm('Tem certeza que deseja limpar a bancada?')) {
+            systemState = { components: [] };
+            componentCounter = 0;
+            renderWorkbench();
+            resultsPanel.classList.add('hidden');
+        }
+    });
+
+    // --- LÓGICA DE PROJETOS (SALVAR/CARREGAR) ---
+    saveButton.addEventListener('click', () => saveProjectModal.classList.remove('hidden'));
+    document.getElementById('save-cancel-btn').addEventListener('click', () => saveProjectModal.classList.add('hidden'));
+    document.getElementById('save-confirm-btn').addEventListener('click', handleSaveProject);
+    
+    projectList.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const projectId = e.target.dataset.projectId;
+            if (confirm('Carregar este projeto? O trabalho atual será perdido.')) {
+                loadProject(projectId);
+            }
+        }
+    });
+
+    async function fetchAndDisplayProjects() {
+        try {
+            const response = await fetch('/get_projects');
+            const projects = await response.json();
+            projectList.innerHTML = '';
+            if (projects.length === 0) {
+                projectList.innerHTML = '<li>Nenhum projeto salvo.</li>';
+            } else {
+                projects.forEach(p => {
+                    const li = document.createElement('li');
+                    li.textContent = p.name;
+                    li.dataset.projectId = p.id;
+                    projectList.appendChild(li);
+                });
+            }
+        } catch (error) {
+            console.error("Erro ao buscar projetos:", error);
+        }
+    }
+
+    async function handleSaveProject() {
+        const projectName = document.getElementById('project-name').value;
+        if (!projectName.trim()) return alert('Por favor, dê um nome ao projeto.');
         
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
-        doc.text('Relatório de Análise de Sistema Mecânico', 105, 20, { align: 'center' });
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 105, 30, { align: 'center' });
+        try {
+            const response = await fetch('/save_project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_name: projectName, system_state: systemState })
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || 'Falha ao salvar');
+            alert('Projeto salvo!');
+            saveProjectModal.classList.add('hidden');
+            fetchAndDisplayProjects();
+        } catch (error) {
+            alert(`Erro ao salvar: ${error.message}`);
+        }
+    }
+
+    async function loadProject(projectId) {
+        try {
+            const response = await fetch(`/load_project/${projectId}`);
+            if (!response.ok) throw new Error('Projeto não encontrado.');
+            const loadedState = await response.json();
+            systemState = loadedState;
+            const ids = systemState.components.map(c => parseInt(c.id.split('_')[1]));
+            componentCounter = ids.length > 0 ? Math.max(...ids) : 0;
+            renderWorkbench();
+            resultsPanel.classList.add('hidden');
+        } catch (error) {
+            alert(`Erro ao carregar projeto: ${error.message}`);
+        }
+    }
+
+    // --- ANÁLISE E OTIMIZAÇÃO ---
+    async function handleAnalyzeClick() {
+        if(systemState.components.length === 0) return alert('Adicione componentes para analisar.');
+        try {
+            const response = await fetch('/analyze_system', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(systemState)
+            });
+            const results = await response.json();
+            if (results.error) throw new Error(results.error);
+            lastResults = results;
+            displayAnalysisResults(results);
+        } catch (error) {
+            alert(`Erro na análise: ${error.message}`);
+        }
+    }
+
+    function displayAnalysisResults(results) {
+        resultsContent.innerHTML = `<ul>
+            ${Object.entries(results.sistema).map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('')}
+            ${Object.entries(results.financeiro_energetico).map(([key, value]) => `<li>${key}: <strong>${value}</strong></li>`).join('')}
+        </ul>`;
+        resultsPanel.classList.remove('hidden');
+        generatePdfBtn.classList.remove('hidden');
+    }
+
+    // Otimização
+    optimizeButton.addEventListener('click', () => optimizeModal.classList.remove('hidden'));
+    document.getElementById('optimize-cancel-btn').addEventListener('click', () => optimizeModal.classList.add('hidden'));
+    document.getElementById('optimize-confirm-btn').addEventListener('click', handleOptimize);
+    
+    async function handleOptimize() {
+        // Lógica de otimização aqui
+        optimizeModal.classList.add('hidden');
+    }
+
+    // --- MODAL DE COMPONENTES ---
+    document.getElementById('modal-close-btn').addEventListener('click', () => componentModal.classList.add('hidden'));
+    document.getElementById('modal-form').addEventListener('submit', handleModalSubmit);
+
+    function openModalForComponent(id) {
+        currentEditingComponentId = id;
+        const component = systemState.components.find(c => c.id === id);
+        if (!component) return;
+        document.getElementById('modal-title').textContent = `Configurar ${component.type}`;
         
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Layout do Sistema', 14, 50);
-        doc.addImage(imgData, 'PNG', 14, 60, 180, 100);
-        
-        doc.addPage();
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Análise Detalhada', 14, 20);
-        
-        let currentY = 30;
-        
-        function addSection(title, data) {
-            if (!data || Object.keys(data).length === 0) return;
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text(title, 14, currentY);
-            currentY += 8;
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'normal');
-            for (const [key, value] of Object.entries(data)) {
-                let label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                doc.text(`${label}:`, 16, currentY);
-                doc.text(String(value), 100, currentY);
-                currentY += 7;
-                if (currentY > 280) {
-                    doc.addPage();
-                    currentY = 20;
+        let fieldsHtml = '';
+        const data = component.data;
+        // Gerar campos baseados no tipo de componente
+        switch(component.type) {
+            case 'motor':
+                fieldsHtml = `
+                    <input name="power_kw" placeholder="Potência (kW)" value="${data.power_kw || ''}">
+                    <input name="rpm" placeholder="RPM" value="${data.rpm || ''}">`;
+                break;
+            case 'polia_motora':
+            case 'polia_movida':
+                fieldsHtml = `<input name="diameter" placeholder="Diâmetro (mm)" value="${data.diameter || ''}">`;
+                break;
+            case 'rolamento':
+                fieldsHtml = `<select name="modelo"><option value="">Selecione</option>${componentDatabase.rolamentos.map(r => `<option value="${r.modelo}" ${data.modelo === r.modelo ? 'selected' : ''}>${r.modelo}</option>`).join('')}</select>`;
+                break;
+        }
+        document.getElementById('modal-fields').innerHTML = fieldsHtml;
+        componentModal.classList.remove('hidden');
+    }
+
+    function handleModalSubmit(e) {
+        e.preventDefault();
+        const component = systemState.components.find(c => c.id === currentEditingComponentId);
+        if(component) {
+            const formData = new FormData(e.target);
+            for(let [key, value] of formData.entries()) {
+                if (key === 'modelo' && component.type === 'rolamento') {
+                    const rolamentoData = componentDatabase.rolamentos.find(r => r.modelo === value);
+                    if(rolamentoData) {
+                        component.data = { ...component.data, ...rolamentoData };
+                    }
+                } else {
+                    component.data[key] = value;
                 }
             }
-            currentY += 5;
         }
-        
-        addSection('Resultados Técnicos', lastResults.sistema);
-        addSection('Análise Financeira e Energética', lastResults.financeiro_energetico);
-        
-        const lifeData = {};
-        for (const [id, data] of Object.entries(lastResults)) {
-            if (id.startsWith('comp_') && data.tipo === 'Rolamento') {
-                lifeData[`Vida Util L10h (${id})`] = `${data.vida_util_l10h.toLocaleString('pt-BR')} horas`;
-            }
-        }
-        addSection('Análise de Vida Útil dos Componentes', lifeData);
-        
-        doc.save(`relatorio-sistema-${Date.now()}.pdf`);
+        componentModal.classList.add('hidden');
+        renderWorkbench();
+    }
+    
+    // --- FUNÇÕES DE DESENHO ---
+    function drawConnections() {
+        // Lógica para desenhar as linhas (correias) aqui
     }
 
-    // --- INICIA A APLICAÇÃO ---
+    // --- Iniciar a aplicação ---
     initialize();
 });
