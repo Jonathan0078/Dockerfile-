@@ -12,10 +12,22 @@
     <div class="platform-container">
         <aside id="component-library">
             <h2>Biblioteca</h2>
-            <div class="component-item"><button class="add-btn" data-type="motor" title="Adicionar Motor">+</button><span>Motor</span></div>
-            <div class="component-item"><button class="add-btn" data-type="polia_motora" title="Adicionar Polia Motora">+</button><span>Polia Motora</span></div>
-            <div class="component-item"><button class="add-btn" data-type="polia_movida" title="Adicionar Polia Movida">+</button><span>Polia Movida</span></div>
-            <div class="component-item"><button class="add-btn" data-type="rolamento" title="Adicionar Rolamento">+</button><span>Rolamento</span></div>
+            <div class="component-item">
+                <span>Motor</span>
+                <button class="add-btn" data-type="motor" title="Adicionar Motor">+</button>
+            </div>
+            <div class="component-item">
+                <span>Polia Motora</span>
+                <button class="add-btn" data-type="polia_motora" title="Adicionar Polia Motora">+</button>
+            </div>
+            <div class="component-item">
+                <span>Polia Movida</span>
+                <button class="add-btn" data-type="polia_movida" title="Adicionar Polia Movida">+</button>
+            </div>
+            <div class="component-item">
+                <span>Rolamento</span>
+                <button class="add-btn" data-type="rolamento" title="Adicionar Rolamento">+</button>
+            </div>
         </aside>
 
         <main id="main-workbench">
@@ -51,8 +63,35 @@
         </aside>
     </div>
 
-    <div id="component-modal" class="modal-backdrop hidden"></div>
-    <div id="optimize-modal" class="modal-backdrop hidden"></div>
+    <div id="component-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Configurar Componente</h3>
+            <form id="modal-form">
+                <div id="modal-fields"></div>
+                <button type="submit" class="btn btn-highlight">Salvar</button>
+                <button type="button" id="modal-close-btn" class="btn btn-secondary">Cancelar</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="optimize-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <h3>Otimizar Sistema</h3>
+            <p>Selecione seu objetivo. O software testará combinações para encontrar a melhor solução. (Requer no mínimo 1 motor, 2 polias e 2 rolamentos na bancada).</p>
+            <form id="optimize-form">
+                <div class="input-group">
+                    <label for="optimization-goal">Meu objetivo é:</label>
+                    <select id="optimization-goal" name="goal">
+                        <option value="cost">Minimizar Custo Operacional Anual</option>
+                        <option value="life">Maximizar Vida Útil do Sistema</option>
+                        <option value="efficiency">Maximizar Eficiência da Transmissão</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-highlight">Encontrar Soluções</button>
+                <button type="button" id="optimize-modal-close-btn" class="btn btn-secondary">Cancelar</button>
+            </form>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
