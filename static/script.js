@@ -15,13 +15,14 @@ async function initializeData() {
     const projectList = document.getElementById('project-list');
 
     try {
-        const response = await fetch('/get_component_database');
-        if (!response.ok) throw new Error('Falha ao carregar banco de dados.');
+        // Agora busca direto do arquivo estático database.json
+        const response = await fetch('/database.json');
+        if (!response.ok) throw new Error('Falha ao carregar database.json');
         componentDatabase = await response.json();
         if (!componentDatabase.rolamentos) componentDatabase.rolamentos = [];
     } catch (error) {
         alert("Não foi possível carregar o banco de dados de componentes.");
-        componentDatabase.rolamentos = [];
+        componentDatabase = { rolamentos: [] };
     }
 
     try {
@@ -335,7 +336,7 @@ function renderWorkbench() {
             el.style.width = `${comp.width}px`;
             el.style.height = `${comp.height}px`;
         }
-        el.setAttribute('tabindex', '0'); // <-- Aqui adicionamos tabindex para acessibilidade
+        el.setAttribute('tabindex', '0'); // Acessibilidade
 
         const label = document.createElement('div');
         label.className = 'component-label';
