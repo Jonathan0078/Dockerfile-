@@ -1,7 +1,7 @@
 /* Importando fontes do Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
 
-/* --- SEU TEMA GLOBAL --- */
+/* --- TEMA GLOBAL E VARIÁVEIS --- */
 :root {
     --cor-primaria: #003366;   /* Azul escuro */
     --cor-secundaria: #005a9c; /* Azul médio */
@@ -14,7 +14,7 @@
     --cor-fundo-component-item: #e9ecef; /* Fundo suave para itens */
 }
 
-/* --- ESTILOS GERAIS --- */
+/* --- ESTILOS GERAIS E RESET --- */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -35,7 +35,7 @@ h2, h3 {
     text-align: center;
 }
 
-/* --- ESTILOS PARA PÁGINAS DE AUTENTICAÇÃO (LOGIN/REGISTRO) --- */
+/* --- PÁGINAS DE AUTENTICAÇÃO (LOGIN E REGISTRO) --- */
 .auth-body {
     display: flex;
     justify-content: center;
@@ -52,11 +52,7 @@ h2, h3 {
     border-radius: 8px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     text-align: center;
-}
-
-.auth-container h2 {
-    color: var(--cor-primaria);
-    margin-bottom: 2rem;
+    transition: all 0.3s ease;
 }
 
 .auth-container .input-group {
@@ -78,7 +74,6 @@ h2, h3 {
     font-size: 1rem;
 }
 
-/* Wrapper e botão de exibir/ocultar senha */
 .password-input-wrapper {
     position: relative;
     display: flex;
@@ -126,18 +121,19 @@ h2, h3 {
     text-decoration: none;
 }
 
-/* Mensagens de erro/sucesso do Flask */
 .flash-message {
     padding: 1rem;
     margin-bottom: 1rem;
     border-radius: 5px;
     border: 1px solid transparent;
 }
+
 .flash-message.error {
     background-color: #f8d7da;
     color: var(--cor-erro);
     border-color: var(--cor-erro);
 }
+
 .flash-message.success {
     background-color: #d4edda;
     color: var(--cor-sucesso);
@@ -145,25 +141,275 @@ h2, h3 {
 }
 
 
-/* --- ESTILOS DA PLATAFORMA PRINCIPAL --- */
+/* --- PLATAFORMA PRINCIPAL --- */
 .platform-container {
     display: grid;
     grid-template-columns: 300px 1fr 350px;
     height: 100vh;
 }
 
-/* Demais estilos da plataforma que você forneceu... */
-/* ... (todo o resto do seu CSS da plataforma vai aqui) ... */
-/* ... */
-/* ... */
+/* BARRA LATERAL ESQUERDA (BIBLIOTECA E PROJETOS) */
+aside#component-library {
+    padding: 1.5rem;
+    background-color: #fff;
+    border-right: 1px solid var(--cor-borda);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+aside#component-library h3 {
+    border-bottom: 2px solid var(--cor-borda);
+    padding-bottom: 0.5rem;
+}
+
+.component-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--cor-fundo-component-item);
+    border-radius: 8px;
+    border: 1px solid var(--cor-borda);
+}
+
+.add-btn {
+    background-color: var(--cor-secundaria);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-btn:hover {
+    background-color: #004a8c;
+}
+
+.user-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--cor-fundo-component-item);
+    border-radius: 8px;
+}
+
+#welcome-message {
+    font-weight: bold;
+    color: var(--cor-primaria);
+}
+
+.btn-logout {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--cor-erro);
+    padding: 0.5rem;
+}
+
+#projects-panel {
+    margin-bottom: 2rem;
+}
+
+#project-list {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--cor-borda);
+    border-radius: 5px;
+}
+
+#project-list li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--cor-borda);
+    transition: background-color 0.2s;
+}
+
+#project-list li:hover {
+    background-color: var(--cor-fundo-component-item);
+}
+
+#project-list li:last-child {
+    border-bottom: none;
+}
+
+/* ÁREA DE TRABALHO PRINCIPAL */
+#main-workbench {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#workbench-area {
+    flex-grow: 1;
+    background-color: #fff;
+    position: relative;
+    overflow: hidden;
+    background-image:
+        linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+#connection-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.belt-line {
+    stroke: var(--cor-texto);
+    stroke-width: 4px;
+    stroke-linecap: round;
+}
+
+.placed-component {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    cursor: grab;
+    transition: transform 0.1s ease-out;
+    touch-action: none;
+    user-select: none;
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.placed-component.dragging {
+    cursor: grabbing;
+    opacity: 0.7;
+    z-index: 100;
+}
+
+.component-label {
+    position: absolute;
+    bottom: -25px;
+    font-size: 0.75rem;
+    color: var(--cor-texto);
+    text-align: center;
+    width: max-content;
+}
+
+/* Tipos específicos de componentes */
+.motor { width: 80px; height: 80px; background-color: var(--cor-sucesso); border-radius: 10px; border: 2px solid #208038;}
+.polia_motora, .polia_movida { width: 100px; height: 100px; background-color: var(--cor-secundaria); border-radius: 50%; border: 2px solid var(--cor-primaria);}
+.rolamento { width: 40px; height: 40px; background-color: var(--cor-destaque); border-radius: 50%; border: 2px solid #c79100;}
+
+/* PAINEL DE RESULTADOS (DIREITA) */
+aside#results-panel {
+    width: 350px;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-left: 1px solid var(--cor-borda);
+    box-shadow: -4px 0 6px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#results-content ul {
+    list-style: none;
+    margin-bottom: 1rem;
+}
+
+#results-content li {
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--cor-borda);
+    display: flex;
+    justify-content: space-between;
+}
+
+#results-content li strong {
+    color: var(--cor-secundaria);
+}
+
+.weakest-link {
+    color: var(--cor-erro);
+    font-weight: bold;
+    text-align: center;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    border: 2px dashed var(--cor-erro);
+    border-radius: 5px;
+}
+
+#generate-pdf-btn {
+    width: 100%;
+    padding: 0.8rem;
+    margin-top: 1.5rem;
+    border: none;
+    color: white;
+    font-weight: bold;
+    background-color: var(--cor-secundaria);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* MODAIS */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content form button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 1.5rem;
+}
+
+/* BARRA DE AÇÃO MOBILE */
+#mobile-action-bar {
+    display: none;
+}
 
 
-/* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS --- */
-@media (max-width: 768px) {
-    /* Estilo da página de login para mobile */
+/* --- MEDIA QUERIES PARA RESPONSIVIDADE --- */
+@media (max-width: 900px) {
+    /* AJUSTES PARA PÁGINA DE LOGIN EM MOBILE */
     .auth-body .auth-container {
         width: 100%;
-        height: 100vh;
+        height: 100%;
+        min-height: 100vh;
         max-width: none;
         margin: 0;
         border-radius: 0;
@@ -175,19 +421,44 @@ h2, h3 {
         box-shadow: none;
     }
 
-    /* Estilos da plataforma para mobile */
+    /* AJUSTES PARA A PLATAFORMA EM MOBILE */
     .platform-container {
         grid-template-columns: 1fr;
         height: auto;
-        min-height: 100vh;
-        padding-bottom: 70px; /* Espaço para a barra de ação */
     }
 
-    /* Esconde as barras laterais no mobile por padrão */
     aside#component-library, aside#results-panel {
-        display: none;
+        display: none; /* Escondidas por padrão no mobile */
     }
 
-    /* ... (resto da sua media query para a plataforma) ... */
-    /* ... */
+    #mobile-action-bar {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        width: 100%;
+        height: 60px;
+        background-color: var(--cor-primaria);
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 500;
+        padding: 0 10px;
+    }
+    
+    #mobile-action-bar .btn {
+        height: 50px;
+        flex-grow: 1; /* Faz os botões ocuparem espaço igual */
+        margin: 0 5px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        background-color: var(--cor-secundaria);
+        border: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
 }
