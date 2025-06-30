@@ -3,63 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Plataforma de Engenharia</title>
+    <title>Login - Plataforma</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-    <div class="login-container">
-        <h2>Bancada de Trabalho Virtual</h2>
-        
-        {% with messages = get_flashed_messages() %}
+<body class="auth-body">
+    <div class="auth-container">
+        <h2>Acessar Plataforma</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="flash-message error">
-                    {{ messages[0] }}
-                </div>
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
             {% endif %}
         {% endwith %}
-
         <form action="{{ url_for('login') }}" method="POST">
             <div class="input-group">
                 <label for="username">Usuário</label>
                 <input type="text" id="username" name="username" required>
             </div>
-            
             <div class="input-group">
                 <label for="password">Senha</label>
                 <div class="password-input-wrapper">
                     <input type="password" id="password" name="password" required>
-                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
-                            <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
-                            <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-                        </svg>
-                    </button>
+                    <button type="button" class="password-toggle-btn" id="toggle-password">👁️</button>
                 </div>
             </div>
-
-            <button type="submit" class="btn btn-primary">Entrar</button>
+            <button type="submit" class="btn">Entrar</button>
         </form>
-
-        <div class="register-link">
+        <div class="auth-switch">
             <p>Não tem uma conta? <a href="{{ url_for('register') }}">Cadastre-se</a></p>
         </div>
     </div>
-
     <script>
-        function togglePasswordVisibility() {
+        document.getElementById('toggle-password').addEventListener('click', function () {
             const passwordInput = document.getElementById('password');
-            const toggleButton = document.querySelector('.password-toggle-btn');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                // Opcional: mudar o ícone para um olho "cortado" quando a senha está visível
-                toggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-slash-fill" viewBox="0 0 16 16"><path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7.029 7.029 0 0 0 2.79-.588zM5.21 3.088A7.028 7.028 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474L5.21 3.089z"/><path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829l-2.83-2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829z"/><path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12-.708.708z"/></svg>`;
-            } else {
-                passwordInput.type = 'password';
-                // Retornar ao ícone de olho normal
-                toggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/></svg>`;
-            }
-        }
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '🙈';
+        });
     </script>
 </body>
 </html>
