@@ -79,28 +79,24 @@ aside h2, aside h3 {
     background-color: #2980b9;
 }
 
-/* --- MAIN: BANCADA DE TRABALHO --- */
-#main-workbench {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-}
-
-.workbench-header {
+/* --- MAIN: CABEÇALHO E ÁREA DA BANCADA (AGORA SÃO IRMÃOS) --- */
+#workbench-header-container { /* Novo container para o cabeçalho */
+    flex-shrink: 0; /* Impede que o cabeçalho encolha */
     background-color: var(--cor-primaria);
     color: white;
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     z-index: 10;
 }
 
-#workbench-area {
-    flex-grow: 1;
+.workbench-header { /* O cabeçalho real */
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#workbench-area { /* A área de trabalho dos componentes */
+    flex-grow: 1; /* Permite que ocupe o espaço restante */
     background-color: #fff;
     position: relative;
     overflow: hidden;
@@ -475,7 +471,7 @@ aside h2, aside h3 {
     margin: 0 5px;
 }
 
-/* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS --- */
+/* --- ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (com nova estrutura) --- */
 @media (max-width: 768px) {
     .platform-container {
         flex-direction: column; /* Empilha os elementos verticalmente */
@@ -483,34 +479,31 @@ aside h2, aside h3 {
         min-height: 100vh; /* Garante que ocupe a altura total da tela */
     }
 
-    aside#component-library { /* O painel lateral esquerdo */
+    /* Nova ordem dos elementos na tela mobile */
+    #workbench-header-container { /* O cabeçalho vem primeiro */
+        order: 1;
         width: 100%; /* Ocupa toda a largura */
-        border-right: none; /* Remove a borda lateral */
-        border-bottom: 1px solid var(--cor-borda); /* Adiciona uma borda na parte inferior */
-        order: 2; /* Aparece depois do conteúdo principal da bancada */
-        padding-bottom: 70px; /* Garante espaço para a barra de ação fixa no rodapé */
     }
 
-    #main-workbench { /* A área principal da bancada */
+    aside#component-library { /* A barra lateral (projetos/biblioteca) vem em segundo */
+        order: 2;
         width: 100%; /* Ocupa toda a largura */
-        order: 1; /* Aparece primeiro */
-        flex-grow: 1; /* Permite que cresça e ocupe espaço disponível */
+        border-right: none; /* Remove borda lateral */
+        border-bottom: 1px solid var(--cor-borda); /* Adiciona borda inferior */
+        padding-bottom: 70px; /* Espaço para a barra de ação fixa no rodapé */
+    }
+
+    #workbench-area { /* A área de trabalho vem por último */
+        order: 3;
+        flex-grow: 1; /* Permite que a área cresça e ocupe o espaço restante */
+        width: 100%; /* Ocupa toda a largura */
+        min-height: 40vh; /* Altura mínima para ser visível */
+        overflow: hidden; /* Garante que o conteúdo não transborde */
+        position: relative; /* Essencial para o posicionamento dos componentes */
     }
     
-    .workbench-header {
-        /* Já está dentro de #main-workbench, então aparece naturalmente primeiro */
-        flex-shrink: 0; /* Impede que o cabeçalho encolha */
-    }
-
-    #workbench-area {
-        /* Fica dentro de #main-workbench, logo abaixo do cabeçalho */
-        flex-grow: 1; /* Permite que a área de itens cresça */
-        min-height: 40vh; /* Garante uma altura mínima visível para a bancada */
-        overflow: hidden; /* Evita rolagem interna desnecessária se não for principal */
-    }
-
     #results-panel { /* O painel de resultados da direita */
-        display: none; /* Esconde o painel de resultados em telas pequenas (foco na área de trabalho) */
+        display: none; /* Esconde o painel de resultados em telas pequenas */
     }
 
     #mobile-action-bar {
